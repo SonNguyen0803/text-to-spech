@@ -1,0 +1,25 @@
+{
+  "name": "vocalflow-ai-tts",
+  "version": "2.5.0",
+  "description": "Interactive Modern Text-to-Speech Web Widget with Multi-source Engine (Browser Offline, Free Google TTS, Hugging Face AI)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "text-to-speech",
+    "tts",
+    "speech-synthesis",
+    "web-speech-api",
+    "huggingface",
+    "google-tts",
+    "vietnamese-tts",
+    "audio-visualizer",
+    "tailwind"
+  ],
+  "author": "Antigravity",
+  "license": "MIT",
+  "dependencies": {
+    "@distube/ytdl-core": "^5.2.1"
+  }
+}
