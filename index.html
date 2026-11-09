@@ -1347,7 +1347,7 @@
   <!-- Nạp thư viện Piper TTS WebAssembly (@mintplex-labs/piper-tts-web) chạy Offline 100% -->
   <script type="module">
     try {
-      import * as piper from 'https://cdn.jsdelivr.net/npm/@mintplex-labs/piper-tts-web@1.0.5/+esm';
+      const piper = await import('https://cdn.jsdelivr.net/npm/@mintplex-labs/piper-tts-web@1.0.5/+esm');
       window.piperTts = piper;
       window.dispatchEvent(new CustomEvent('piper-tts-ready', { detail: piper }));
       console.log('✅ Piper TTS WebAssembly Module đã nạp thành công!');
