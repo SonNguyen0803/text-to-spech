@@ -345,10 +345,10 @@ const server = http.createServer(async (req, res) => {
   });
 });
 
-// server.listen(PORT, () => {
-//   console.log(`\n======================================================`);
-//   console.log(`🚀 VocalFlow AI TTS đang chạy tại: http://localhost:${PORT}`);
-//   console.log(`🎧 API Tải Audio: http://localhost:${PORT}/api/tts?text=Xin+chao&lang=vi`);
-//   console.log(`📂 Thư mục: ${PUBLIC_DIR}`);
-//   console.log(`======================================================\n`);
-// });
+server.listen(PORT, () => {
+  console.log(`\n======================================================`);
+  console.log(`🚀 VocalFlow AI TTS đang chạy tại: http://localhost:${PORT}`);
+  console.log(`🎧 API Tải Audio: http://localhost:${PORT}/api/tts?text=Xin+chao&lang=vi`);
+  console.log(`📂 Thư mục: ${PUBLIC_DIR}`);
+  console.log(`======================================================\n`);
+});
