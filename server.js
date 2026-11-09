@@ -861,10 +861,18 @@ async function getCachedYouTubeFormat(ytId) {
     const ext = path.extname(filePath).toLowerCase();
     const contentType = MIME_TYPES[ext] || 'application/octet-stream';
 
-    res.writeHead(200, {
+    const respHeaders = {
       'Content-Type': contentType,
       'Cache-Control': 'no-cache'
-    });
+    };
+
+    // Bật Cross-Origin Isolation để mở khóa SharedArrayBuffer / WebAssembly SIMD Multi-threading
+    if (ext === '.html') {
+      respHeaders['Cross-Origin-Opener-Policy'] = 'same-origin';
+      respHeaders['Cross-Origin-Embedder-Policy'] = 'credentialless';
+    }
+
+    res.writeHead(200, respHeaders);
 
     const stream = fs.createReadStream(filePath);
     stream.pipe(res);

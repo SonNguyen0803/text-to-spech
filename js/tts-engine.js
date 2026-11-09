@@ -309,18 +309,45 @@ class TTSEngine {
         this.onPiperProgress({ status: 'starting', percent: 0, voiceId });
       }
 
-      // predict tự động tải và cache vào OPFS nếu chưa có trong máy
-      const wavBlob = await piper.predict(
-        { text: cleanText, voiceId: voiceId },
-        (progress) => {
-          if (progress && progress.total) {
-            const percent = Math.min(100, Math.round((progress.loaded / progress.total) * 100));
-            if (this.onPiperProgress) {
-              this.onPiperProgress({ status: 'downloading', percent, loaded: progress.loaded, total: progress.total, voiceId });
-            }
+      // Khắc phục lỗi 404 cdnjs của @mintplex-labs/piper-tts-web:
+      // Thư viện nạp onnxruntime-web@1.27.0 nhưng mặc định trỏ về cdnjs 1.18.0 (không có ort-wasm-simd-threaded.mjs).
+      // Ta truyền wasmPaths trỏ chính xác về jsDelivr của onnxruntime-web@1.27.0:
+      const ONNX_WASM_BASE = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.27.0/dist/';
+      const PIPER_WASM_BASE = 'https://cdn.jsdelivr.net/npm/@diffusionstudio/piper-wasm@1.0.0/build/piper_phonemize';
+
+      const progressCallback = (progress) => {
+        if (progress && progress.total) {
+          const percent = Math.min(100, Math.round((progress.loaded / progress.total) * 100));
+          if (this.onPiperProgress) {
+            this.onPiperProgress({ status: 'downloading', percent, loaded: progress.loaded, total: progress.total, voiceId });
           }
         }
-      );
+      };
+
+      // Đảm bảo tạo mới phiên nếu người dùng chuyển sang voiceId khác
+      if (piper.TtsSession && piper.TtsSession._instance && piper.TtsSession._instance.voiceId !== voiceId) {
+        piper.TtsSession._instance = null;
+      }
+
+      let wavBlob;
+      if (typeof piper.TtsSession === 'function') {
+        const session = new piper.TtsSession({
+          voiceId: voiceId,
+          progress: progressCallback,
+          wasmPaths: {
+            onnxWasm: ONNX_WASM_BASE,
+            piperData: `${PIPER_WASM_BASE}.data`,
+            piperWasm: `${PIPER_WASM_BASE}.wasm`
+          }
+        });
+        await session.waitReady;
+        wavBlob = await session.predict(cleanText);
+      } else {
+        wavBlob = await piper.predict(
+          { text: cleanText, voiceId: voiceId },
+          progressCallback
+        );
+      }
 
       if (this.onPiperProgress) {
         this.onPiperProgress({ status: 'ready', percent: 100, voiceId });
