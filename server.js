@@ -579,33 +579,66 @@ async function resolveYouTubeVideo(videoUrl) {
     }
   }
 
+// Bộ đệm thông tin định dạng video YouTube để phục vụ các yêu cầu HTTP Range tức thì
+const ytInfoCache = new Map();
+
+async function getCachedYouTubeFormat(ytId) {
+  const now = Date.now();
+  if (ytInfoCache.has(ytId)) {
+    const cached = ytInfoCache.get(ytId);
+    if (now - cached.timestamp < 10 * 60 * 1000) { // cache 10 phút
+      return cached;
+    }
+  }
+
+  const cookieStr = getYouTubeCookie();
+  const hasValidCookie = cookieStr && (cookieStr.includes('SAPISID') || cookieStr.includes('__Secure-3PAPISID') || cookieStr.includes('.youtube.com'));
+  const clientCandidates = [
+    (YtdlClient && YtdlClient.Tv) ? YtdlClient.Tv : 'tv',
+    (YtdlClient && YtdlClient.VisionOS) ? YtdlClient.VisionOS : 'visionos'
+  ];
+  const ytOpts = { clients: clientCandidates };
+  if (hasValidCookie) ytOpts.cookie = cookieStr;
+
+  const ytInstance = new YtdlClass(ytOpts);
+  const info = await ytInstance.getInfo(ytId);
+
+  // Ưu tiên định dạng MP4 codec avc1 (H.264) tương thích 100% mọi trình duyệt và Canvas
+  const mp4s = info.formats.filter(f => f.hasVideo && f.container === 'mp4' && (f.codecs || '').includes('avc1'));
+  mp4s.sort((a, b) => (b.height || 0) - (a.height || 0));
+  const chosen = mp4s.find(f => (f.height || 0) <= 1080 && (f.height || 0) >= 480) || mp4s[0] || info.formats.find(f => f.hasVideo && f.container === 'mp4') || info.formats[0];
+
+  const result = { ytInstance, info, chosen, timestamp: now };
+  ytInfoCache.set(ytId, result);
+  if (ytInfoCache.size > 50) {
+    const firstKey = ytInfoCache.keys().next().value;
+    ytInfoCache.delete(firstKey);
+  }
+  return result;
+}
+
   // 3. ENDPOINT PROXY LUỒNG VIDEO TRÁNH CORS: /api/proxy-video
   if (parsedUrl.pathname === '/api/proxy-video') {
-    // 3A. Trường hợp video YouTube: Truyền luồng trực tiếp bằng Ytdl stream (tránh lỗi 403 Forbidden của Google Video)
+    // 3A. Trường hợp video YouTube: Truyền luồng trực tiếp với chuẩn HTTP Range 206 đầy đủ
     const ytId = parsedUrl.query.yt || (parsedUrl.query.url && (parsedUrl.query.url.includes('youtube.com') || parsedUrl.query.url.includes('youtu.be')) ? parsedUrl.query.url.match(/[a-zA-Z0-9_-]{11}/)?.[0] : null);
     if (ytId && YtdlClass) {
       try {
-        const cookieStr = getYouTubeCookie();
-        const hasValidCookie = cookieStr && (cookieStr.includes('SAPISID') || cookieStr.includes('__Secure-3PAPISID') || cookieStr.includes('.youtube.com'));
-        const clientCandidates = [
-          (YtdlClient && YtdlClient.Tv) ? YtdlClient.Tv : 'tv',
-          (YtdlClient && YtdlClient.VisionOS) ? YtdlClient.VisionOS : 'visionos'
-        ];
-        const ytOpts = { clients: clientCandidates };
-        if (hasValidCookie) ytOpts.cookie = cookieStr;
+        const { ytInstance, info, chosen } = await getCachedYouTubeFormat(ytId);
+        const total = parseInt(chosen.contentLength, 10) || 0;
 
-        const ytInstance = new YtdlClass(ytOpts);
-        const downloadOpts = {
-          filter: f => f.hasVideo && f.container === 'mp4'
-        };
-
+        let start = 0;
+        let end = total > 0 ? total - 1 : undefined;
         let isRange = false;
+
         if (req.headers.range) {
           const match = req.headers.range.match(/bytes=(\d+)-(\d+)?/);
           if (match) {
-            const start = parseInt(match[1], 10);
-            const end = match[2] ? parseInt(match[2], 10) : undefined;
-            downloadOpts.range = { start, end };
+            start = parseInt(match[1], 10);
+            if (match[2]) {
+              end = parseInt(match[2], 10);
+            } else if (total > 0) {
+              end = total - 1;
+            }
             isRange = true;
           }
         }
@@ -613,14 +646,30 @@ async function resolveYouTubeVideo(videoUrl) {
         const outHeaders = {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
-          'Access-Control-Allow-Headers': 'Range, Content-Type',
+          'Access-Control-Allow-Headers': 'Range, Content-Type, Accept',
           'Content-Type': 'video/mp4',
           'Accept-Ranges': 'bytes',
           'Cache-Control': 'public, max-age=3600'
         };
 
-        res.writeHead(isRange ? 206 : 200, outHeaders);
-        const stream = ytInstance.download(ytId, downloadOpts);
+        if (isRange && total > 0 && end !== undefined) {
+          const chunkSize = (end - start) + 1;
+          outHeaders['Content-Range'] = `bytes ${start}-${end}/${total}`;
+          outHeaders['Content-Length'] = chunkSize;
+          res.writeHead(206, outHeaders);
+        } else if (total > 0) {
+          outHeaders['Content-Length'] = total;
+          res.writeHead(200, outHeaders);
+        } else {
+          res.writeHead(200, outHeaders);
+        }
+
+        const media = ytInstance.open(info, chosen);
+        const readOpts = {};
+        if (isRange) {
+          readOpts.range = { start, end };
+        }
+        const stream = media.read(readOpts);
         stream.pipe(res);
 
         stream.on('error', (err) => {

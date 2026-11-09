@@ -1347,6 +1347,28 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // --- QUẢN LÝ CHÈN VIDEO NỀN (LOCAL / TIKTOK / YOUTUBE) ---
+  // Vòng lặp cập nhật Live Preview khi phát video nền
+  let bgVideoAnimFrame = null;
+  function startVideoPreviewLoop() {
+    if (bgVideoAnimFrame) return;
+    function loop() {
+      if (videoExporter.config.bgType === 'video' && videoExporter.config.customBgVideo && !videoExporter.isRendering) {
+        updateVideoPreview();
+        bgVideoAnimFrame = requestAnimationFrame(loop);
+      } else {
+        bgVideoAnimFrame = null;
+      }
+    }
+    bgVideoAnimFrame = requestAnimationFrame(loop);
+  }
+
+  function stopVideoPreviewLoop() {
+    if (bgVideoAnimFrame) {
+      cancelAnimationFrame(bgVideoAnimFrame);
+      bgVideoAnimFrame = null;
+    }
+  }
+
   // 1. Chuyển đổi qua lại giữa Tab Preset/Ảnh và Tab Video nền
   if (tabBgPresetBtn && tabBgVideoBtn && bgPresetTabContent && bgVideoTabContent) {
     tabBgPresetBtn.addEventListener('click', () => {
@@ -1355,6 +1377,7 @@ document.addEventListener('DOMContentLoaded', () => {
       bgPresetTabContent.classList.remove('hidden');
       bgVideoTabContent.classList.add('hidden');
 
+      stopVideoPreviewLoop();
       if (videoExporter.config.customBgVideo) {
         try { videoExporter.config.customBgVideo.pause(); } catch (e) { }
       }
@@ -1371,14 +1394,32 @@ document.addEventListener('DOMContentLoaded', () => {
       if (videoExporter.config.customBgVideo) {
         videoExporter.config.bgType = 'video';
         videoExporter.config.customBgVideo.play().catch(() => { });
+        startVideoPreviewLoop();
         updateVideoPreview();
       }
     });
   }
 
-  // 2. Hàm thiết lập Video Nền: LOẠI BỎ ÂM THANH GỐC 100%
+  // 2. Hàm thiết lập Video Nền: LOẠI BỎ ÂM THANH GỐC 100% & HIỂN THỊ TRỰC TIẾP
   function setupBackgroundVideo(url, title) {
     if (!bgVideoElement) return;
+
+    // Cập nhật cấu hình & thông tin giao diện ngay lập tức
+    videoExporter.config.bgType = 'video';
+    videoExporter.config.customBgVideo = bgVideoElement;
+    videoExporter.config.customBgImage = null;
+
+    if (customVideoStatusBox) customVideoStatusBox.classList.remove('hidden');
+    if (customVideoTitle) customVideoTitle.textContent = title || 'Video nền đã nạp';
+
+    // Chuyển tab sang Chèn Video
+    if (tabBgVideoBtn) tabBgVideoBtn.click();
+
+    // Hủy highlight các preset ảnh
+    bgPresetBtns.forEach(b => {
+      b.classList.remove('border-indigo-500', 'bg-indigo-50/60', 'dark:bg-indigo-950/60');
+      b.classList.add('border-slate-200', 'dark:border-slate-700');
+    });
 
     bgVideoElement.src = url;
     bgVideoElement.muted = true; // LOẠI BỎ ÂM THANH GỐC HOÀN TOÀN
@@ -1387,31 +1428,32 @@ document.addEventListener('DOMContentLoaded', () => {
     bgVideoElement.playsInline = true;
     bgVideoElement.crossOrigin = 'anonymous';
 
+    let hasHandledReady = false;
     const onReady = () => {
-      videoExporter.config.bgType = 'video';
-      videoExporter.config.customBgVideo = bgVideoElement;
-      videoExporter.config.customBgImage = null;
+      if (hasHandledReady) return;
+      hasHandledReady = true;
 
-      if (customVideoStatusBox) customVideoStatusBox.classList.remove('hidden');
-      if (customVideoTitle) customVideoTitle.textContent = title || 'Video nền đã nạp';
+      bgVideoElement.play().then(() => {
+        startVideoPreviewLoop();
+      }).catch(() => { });
 
-      // Chuyển tab sang Chèn Video
-      if (tabBgVideoBtn) tabBgVideoBtn.click();
-
-      // Hủy highlight các preset ảnh
-      bgPresetBtns.forEach(b => {
-        b.classList.remove('border-indigo-500', 'bg-indigo-50/60', 'dark:bg-indigo-950/60');
-        b.classList.add('border-slate-200', 'dark:border-slate-700');
-      });
-
-      bgVideoElement.play().catch(() => { });
       updateVideoPreview();
       showToast(`Đã nạp video nền: "${(title || '').slice(0, 30)}...". Âm thanh gốc đã được loại bỏ hoàn toàn!`, "success", 4500);
-      bgVideoElement.removeEventListener('loadeddata', onReady);
     };
 
-    bgVideoElement.addEventListener('loadeddata', onReady);
+    bgVideoElement.onloadeddata = onReady;
+    bgVideoElement.oncanplay = onReady;
+    bgVideoElement.onloadedmetadata = () => {
+      updateVideoPreview();
+    };
+
+    bgVideoElement.onerror = () => {
+      console.warn("Lỗi nạp luồng video:", bgVideoElement.error);
+      showToast("Không thể tải luồng video trên trình duyệt. Hãy kiểm tra lại kết nối mạng.", "error", 6000);
+    };
+
     bgVideoElement.load();
+    updateVideoPreview();
   }
 
   // 3. Tải Video nền từ máy tính (Local File)
