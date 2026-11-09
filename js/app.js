@@ -31,6 +31,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const sourceSelect = document.getElementById('sourceSelect');
   const browserVoiceGroup = document.getElementById('browserVoiceGroup');
   const browserVoiceSelect = document.getElementById('browserVoiceSelect');
+  const voiceSearchInput = document.getElementById('voiceSearchInput');
+  const clearVoiceSearchBtn = document.getElementById('clearVoiceSearchBtn');
+  const voiceSearchStats = document.getElementById('voiceSearchStats');
+  const voiceSearchResultCount = document.getElementById('voiceSearchResultCount');
+  const resetVoiceFilterBtn = document.getElementById('resetVoiceFilterBtn');
   const googleVoiceGroup = document.getElementById('googleVoiceGroup');
   const googleLangSelect = document.getElementById('googleLangSelect');
   const hfVoiceGroup = document.getElementById('hfVoiceGroup');
@@ -175,7 +180,98 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // 6. Tải danh sách Giọng đọc Trình duyệt & Piper WASM
+  // 6. Quản lý & Tải danh sách Giọng đọc Trình duyệt & Piper WASM với tính năng Tìm kiếm Realtime
+  let allBrowserVoiceItems = [];
+
+  function removeVietnameseTones(str) {
+    if (!str) return '';
+    return str
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd')
+      .replace(/Đ/g, 'D')
+      .toLowerCase();
+  }
+
+  function renderFilteredVoiceList(searchQuery = '') {
+    if (!browserVoiceSelect) return;
+    const cleanQuery = searchQuery.trim();
+    const normalizedQuery = removeVietnameseTones(cleanQuery);
+    browserVoiceSelect.innerHTML = '';
+
+    // Lọc các giọng đọc theo từ khóa tìm kiếm (hỗ trợ không dấu, tên, ngôn ngữ, id)
+    let filteredItems = allBrowserVoiceItems;
+    if (normalizedQuery) {
+      const searchTerms = normalizedQuery.split(/\s+/).filter(Boolean);
+      filteredItems = allBrowserVoiceItems.filter(item => {
+        return searchTerms.every(term => item.searchKey.includes(term));
+      });
+    }
+
+    // Cập nhật trạng thái hiển thị nút Xóa tìm kiếm và số lượng kết quả
+    if (clearVoiceSearchBtn) {
+      if (cleanQuery) {
+        clearVoiceSearchBtn.classList.remove('hidden');
+      } else {
+        clearVoiceSearchBtn.classList.add('hidden');
+      }
+    }
+
+    if (voiceSearchStats && voiceSearchResultCount) {
+      if (cleanQuery) {
+        voiceSearchStats.classList.remove('hidden');
+        voiceSearchResultCount.textContent = `Tìm thấy ${filteredItems.length} giọng phù hợp cho "${cleanQuery}"`;
+      } else {
+        voiceSearchStats.classList.add('hidden');
+      }
+    }
+
+    if (filteredItems.length === 0) {
+      const opt = document.createElement('option');
+      opt.value = "";
+      opt.disabled = true;
+      opt.selected = true;
+      opt.textContent = `❌ Không tìm thấy giọng nào phù hợp với "${cleanQuery}"`;
+      browserVoiceSelect.appendChild(opt);
+      return;
+    }
+
+    // Nhóm các kết quả theo nhóm: Piper AI, Tiếng Việt OS, Tiếng Anh OS, Khác OS
+    const piperGroup = filteredItems.filter(item => item.group === 'piper');
+    const viGroup = filteredItems.filter(item => item.group === 'vi');
+    const enGroup = filteredItems.filter(item => item.group === 'en');
+    const otherGroup = filteredItems.filter(item => item.group === 'other');
+
+    const appendGroup = (label, items) => {
+      if (items.length === 0) return;
+      const optGroup = document.createElement('optgroup');
+      optGroup.label = label;
+      items.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.value;
+        option.textContent = item.display;
+        optGroup.appendChild(option);
+      });
+      browserVoiceSelect.appendChild(optGroup);
+    };
+
+    appendGroup('🧠 Giọng AI Piper WebAssembly (Offline 100% trên máy)', piperGroup);
+    appendGroup('🇻🇳 Tiếng Việt (Cài đặt trên hệ điều hành)', viGroup);
+    appendGroup('🇺🇸/🇬🇧 Tiếng Anh (Hệ điều hành)', enGroup);
+    appendGroup('🌍 Các ngôn ngữ khác (Hệ điều hành)', otherGroup);
+
+    // Duy trì giọng đang được chọn nếu giọng đó nằm trong danh sách kết quả tìm kiếm
+    const currentSelected = engine.settings.selectedBrowserVoiceURI;
+    const isCurrentInFiltered = filteredItems.some(i => i.value === currentSelected);
+
+    if (isCurrentInFiltered) {
+      browserVoiceSelect.value = currentSelected;
+    } else if (filteredItems.length > 0) {
+      browserVoiceSelect.value = filteredItems[0].value;
+      engine.settings.selectedBrowserVoiceURI = filteredItems[0].value;
+    }
+  }
+
   async function populateBrowserVoices() {
     const systemVoices = engine.getAvailableBrowserVoices();
     let storedPiper = [];
@@ -185,82 +281,105 @@ document.addEventListener('DOMContentLoaded', () => {
       storedPiper = [];
     }
 
-    browserVoiceSelect.innerHTML = '';
     const noViNotice = document.getElementById('noViVoiceNotice');
+    allBrowserVoiceItems = [];
 
-    // 1. Nhóm giọng AI Piper WebAssembly (Chạy Offline 100% trong trình duyệt qua ONNX Web)
-    const gPiper = document.createElement('optgroup');
-    gPiper.label = '🧠 Giọng AI Piper WebAssembly (Offline 100% trên máy)';
-
+    // 1. Thêm các giọng AI Piper WebAssembly
     engine.piperVoices.forEach(pv => {
-      const option = document.createElement('option');
-      option.value = `piper:${pv.id}`;
       const isSaved = storedPiper.includes(pv.id);
       const icon = isSaved ? ' ⚡[Đã lưu]' : ` 📥[${pv.size}]`;
-      option.textContent = `${pv.name}${icon}`;
-      gPiper.appendChild(option);
+      const searchKey = removeVietnameseTones(`${pv.name} ${pv.lang} ${pv.id} piper ai neural tiếng việt offline`);
+      allBrowserVoiceItems.push({
+        group: 'piper',
+        value: `piper:${pv.id}`,
+        name: pv.name,
+        lang: pv.lang,
+        display: `${pv.name}${icon}`,
+        searchKey: searchKey
+      });
     });
 
-    browserVoiceSelect.appendChild(gPiper);
-
-    // 2. Nhóm giọng hệ thống (Web Speech API từ OS)
-    const vietnameseVoices = [];
-    const englishVoices = [];
-    const otherVoices = [];
-
+    // 2. Thêm các giọng hệ thống (Web Speech API)
+    let hasViSystem = false;
     systemVoices.forEach(voice => {
       const lang = (voice.lang || '').toLowerCase();
       const name = (voice.name || '').toLowerCase();
+      const isDefault = voice.default ? ' [Mặc định]' : '';
+      const isLocal = voice.localService ? ' ⚡' : ' 🌐';
+
+      let grp = 'other';
       if (lang.includes('vi') || name.includes('vietnam') || name.includes('tiếng việt') || name.includes('linh') || name.includes('an')) {
-        vietnameseVoices.push(voice);
+        grp = 'vi';
+        hasViSystem = true;
       } else if (lang.includes('en')) {
-        englishVoices.push(voice);
-      } else {
-        otherVoices.push(voice);
+        grp = 'en';
       }
+
+      const searchKey = removeVietnameseTones(`${voice.name} ${voice.lang} ${voice.voiceURI} he thong system`);
+      allBrowserVoiceItems.push({
+        group: grp,
+        value: voice.voiceURI,
+        name: voice.name,
+        lang: voice.lang,
+        display: `${voice.name} (${voice.lang})${isDefault}${isLocal}`,
+        searchKey: searchKey
+      });
     });
 
-    const createOptGroup = (label, voiceList) => {
-      if (voiceList.length === 0) return null;
-      const group = document.createElement('optgroup');
-      group.label = label;
-      voiceList.forEach(v => {
-        const option = document.createElement('option');
-        option.value = v.voiceURI;
-        const isDefault = v.default ? ' [Mặc định]' : '';
-        const isLocal = v.localService ? ' ⚡' : ' 🌐';
-        option.textContent = `${v.name} (${v.lang})${isDefault}${isLocal}`;
-        group.appendChild(option);
-      });
-      return group;
-    };
-
-    const gVi = createOptGroup('🇻🇳 Tiếng Việt (Cài đặt trên hệ điều hành)', vietnameseVoices);
-    const gEn = createOptGroup('🇺🇸/🇬🇧 Tiếng Anh (Hệ điều hành)', englishVoices);
-    const gOther = createOptGroup('🌍 Các ngôn ngữ khác (Hệ điều hành)', otherVoices);
-
-    if (gVi) browserVoiceSelect.appendChild(gVi);
-    if (gEn) browserVoiceSelect.appendChild(gEn);
-    if (gOther) browserVoiceSelect.appendChild(gOther);
-
     // Kiểm tra xem thiết bị đã có giọng Tiếng Việt OS hay chưa
-    // Nếu máy chưa có giọng Việt hệ thống, Piper AI đã sẵn sàng ngay bên trên!
-    if (vietnameseVoices.length === 0) {
+    if (!hasViSystem) {
       if (noViNotice) noViNotice.classList.remove('hidden');
     } else {
       if (noViNotice) noViNotice.classList.add('hidden');
     }
 
-    // Ưu tiên giữ giọng đã chọn, nếu chưa chọn thì ưu tiên Piper Tiếng Việt Vais1000 hoặc giọng Việt OS
-    if (engine.settings.selectedBrowserVoiceURI) {
-      browserVoiceSelect.value = engine.settings.selectedBrowserVoiceURI;
-    } else if (vietnameseVoices.length > 0) {
-      browserVoiceSelect.value = vietnameseVoices[0].voiceURI;
-      engine.settings.selectedBrowserVoiceURI = vietnameseVoices[0].voiceURI;
-    } else {
-      browserVoiceSelect.value = 'piper:vi_VN-vais1000-medium';
-      engine.settings.selectedBrowserVoiceURI = 'piper:vi_VN-vais1000-medium';
+    // Mặc định ưu tiên chọn giọng tiếng Việt (Piper Vais1000 hoặc OS) nếu chưa có cấu hình
+    if (!engine.settings.selectedBrowserVoiceURI) {
+      const firstVi = allBrowserVoiceItems.find(i => i.group === 'piper' && i.value.includes('vais1000')) ||
+                      allBrowserVoiceItems.find(i => i.group === 'vi') ||
+                      allBrowserVoiceItems[0];
+      if (firstVi) {
+        engine.settings.selectedBrowserVoiceURI = firstVi.value;
+      }
     }
+
+    // Hiển thị danh sách giọng theo ô tìm kiếm hiện tại (nếu đang tìm)
+    renderFilteredVoiceList(voiceSearchInput ? voiceSearchInput.value : '');
+  }
+
+  // Sự kiện tương tác với Ô tìm kiếm giọng đọc
+  if (voiceSearchInput) {
+    voiceSearchInput.addEventListener('input', (e) => {
+      renderFilteredVoiceList(e.target.value);
+    });
+
+    voiceSearchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        voiceSearchInput.value = '';
+        renderFilteredVoiceList('');
+      } else if (e.key === 'Enter') {
+        browserVoiceSelect.focus();
+      }
+    });
+  }
+
+  if (clearVoiceSearchBtn) {
+    clearVoiceSearchBtn.addEventListener('click', () => {
+      if (voiceSearchInput) {
+        voiceSearchInput.value = '';
+        renderFilteredVoiceList('');
+        voiceSearchInput.focus();
+      }
+    });
+  }
+
+  if (resetVoiceFilterBtn) {
+    resetVoiceFilterBtn.addEventListener('click', () => {
+      if (voiceSearchInput) {
+        voiceSearchInput.value = '';
+        renderFilteredVoiceList('');
+      }
+    });
   }
 
   // Lắng nghe thay đổi giọng trình duyệt

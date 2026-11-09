@@ -309,10 +309,35 @@
               </label>
               <span id="offlineBadge" class="text-[10px] text-indigo-500 dark:text-indigo-400 font-medium">⚡ Offline 100%</span>
             </div>
+
+            <!-- Ô tìm kiếm giọng đọc theo thời gian thực -->
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+              </div>
+              <input type="text" id="voiceSearchInput"
+                placeholder="🔍 Tìm nhanh giọng đọc (ví dụ: HoaiMy, Linh, vi-VN, Piper, Nam, Nữ, English...)"
+                class="glass-input w-full rounded-xl pl-9 pr-8 py-2 text-xs focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-400 transition-all">
+              <button type="button" id="clearVoiceSearchBtn" title="Xóa tìm kiếm"
+                class="hidden absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            </div>
+
             <select id="browserVoiceSelect"
               class="glass-input w-full rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 cursor-pointer">
               <option value="">(Đang tải danh sách giọng nói...)</option>
             </select>
+
+            <!-- Thống kê kết quả tìm kiếm -->
+            <div id="voiceSearchStats" class="hidden flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 px-1">
+              <span id="voiceSearchResultCount">Tìm thấy 0 giọng phù hợp</span>
+              <button type="button" id="resetVoiceFilterBtn" class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">Hiển thị tất cả</button>
+            </div>
 
             <!-- Thanh tiến trình tải mô hình Piper AI WASM lần đầu -->
             <div id="piperProgressContainer" class="hidden space-y-1.5 p-3 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/50 text-xs animate-in fade-in duration-200">
@@ -1356,12 +1381,12 @@
     }
   </script>
 
-  <!-- Nạp các mã nguồn JavaScript (v2.12.0) -->
-  <script src="/js/templates.js?v=2.12.0"></script>
-  <script src="/js/visualizer.js?v=2.12.0"></script>
-  <script src="/js/video-exporter.js?v=2.12.0"></script>
-  <script src="/js/tts-engine.js?v=2.12.0"></script>
-  <script src="/js/app.js?v=2.12.0"></script>
+  <!-- Nạp các mã nguồn JavaScript (v2.13.0) -->
+  <script src="/js/templates.js?v=2.13.0"></script>
+  <script src="/js/visualizer.js?v=2.13.0"></script>
+  <script src="/js/video-exporter.js?v=2.13.0"></script>
+  <script src="/js/tts-engine.js?v=2.13.0"></script>
+  <script src="/js/app.js?v=2.13.0"></script>
 </body>
 
 </html>
