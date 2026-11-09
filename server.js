@@ -158,50 +158,310 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // 2. ENDPOINT PHÂN TÍCH & GIẢI MÃ LINK VIDEO: /api/resolve-video (TikTok, YouTube, Direct MP4)
+/**
+ * Giải mã ký tự HTML entities thành chuỗi văn bản sạch
+ */
+function decodeHtmlEntities(str) {
+  if (!str) return '';
+  return str
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(dec))
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ');
+}
+
+/**
+ * Giải mã unicode và ký tự thoát trong URL từ Facebook JSON
+ */
+function unescapeFbUrl(str) {
+  if (!str) return '';
+  return str
+    .replace(/\\u0025/g, '%')
+    .replace(/\\u0026/g, '&')
+    .replace(/\\\//g, '/')
+    .replace(/&amp;/g, '&');
+}
+
+/**
+ * Bóc tách và giải mã link Facebook (Reels, Watch, Video bài viết, Share link)
+ */
+async function resolveFacebookVideo(videoUrl) {
+  const match = videoUrl.match(/https?:\/\/[^\s]+/);
+  const cleanUrl = match ? match[0] : videoUrl;
+
+  // 1. Ưu tiên bóc tách trực tiếp từ trang Facebook công khai
+  try {
+    const res = await fetch(cleanUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'vi,en-US;q=0.9,en;q=0.8',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Sec-Fetch-User': '?1',
+        'Upgrade-Insecure-Requests': '1'
+      },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(10000)
+    });
+
+    let html = await res.text();
+    html = html.split('&quot;').join('"').split('&amp;').join('&');
+
+    const hdMatch = html.match(/"browser_native_hd_url":"(.*?)"/) ||
+                    html.match(/"playable_url_quality_hd":"(.*?)"/) ||
+                    html.match(/hd_src\s*:\s*"([^"]*)"/);
+
+    const sdMatch = html.match(/"browser_native_sd_url":"(.*?)"/) ||
+                    html.match(/"playable_url":"(.*?)"/) ||
+                    html.match(/sd_src\s*:\s*"([^"]*)"/) ||
+                    html.match(/<meta\s+property="og:video(?::url)?"\s+content="(.*?)"/i);
+
+    const titleMatch = html.match(/<meta\s+name="description"\s+content="(.*?)"/i) ||
+                       html.match(/<meta\s+property="og:title"\s+content="(.*?)"/i) ||
+                       html.match(/<title>(.*?)<\/title>/i);
+
+    const rawHd = hdMatch ? unescapeFbUrl(hdMatch[1]) : '';
+    const rawSd = sdMatch ? unescapeFbUrl(sdMatch[1]) : '';
+    const chosenUrl = rawHd || rawSd;
+
+    if (chosenUrl && chosenUrl.startsWith('http')) {
+      let rawTitle = titleMatch ? titleMatch[1] : 'Video Facebook';
+      rawTitle = decodeHtmlEntities(rawTitle).replace(/\s*\|\s*Facebook$/i, '').trim();
+      return {
+        success: true,
+        type: 'facebook',
+        quality: rawHd ? 'HD' : 'SD',
+        title: rawTitle || 'Video Facebook',
+        originalUrl: chosenUrl,
+        videoUrl: `/api/proxy-video?url=${encodeURIComponent(chosenUrl)}`
+      };
+    }
+  } catch (err) {
+    console.warn('Scraping Facebook trực tiếp thất bại, chuyển sang API dự phòng:', err.message);
+  }
+
+  // 2. Dự phòng qua cổng API giải mã Facebook
+  try {
+    const apiRes = await fetch('https://backend1.tioo.eu.org/fbdown?url=' + encodeURIComponent(cleanUrl), {
+      signal: AbortSignal.timeout(8000)
+    });
+    const apiData = await apiRes.json().catch(() => ({}));
+    if (apiData && (apiData.HD || apiData.Normal_video)) {
+      const chosenUrl = apiData.HD || apiData.Normal_video;
+      return {
+        success: true,
+        type: 'facebook',
+        quality: apiData.HD ? 'HD' : 'SD',
+        title: apiData.title || 'Video Facebook',
+        originalUrl: chosenUrl,
+        videoUrl: `/api/proxy-video?url=${encodeURIComponent(chosenUrl)}`
+      };
+    }
+  } catch (err) {
+    console.warn('API Facebook dự phòng thất bại:', err.message);
+  }
+
+  throw new Error("Không thể trích xuất video Facebook từ link này. Hãy đảm bảo video ở chế độ Công khai (Public).");
+}
+
+/**
+ * Bóc tách và giải mã link Douyin (抖音 - v.douyin.com, douyin.com/video/...)
+ */
+async function resolveDouyinVideo(videoUrl) {
+  const match = videoUrl.match(/https?:\/\/[^\s]+/);
+  const cleanUrl = match ? match[0] : videoUrl;
+
+  // 1. Thử qua các API giải mã Douyin không watermark
+  const douyinApis = [
+    `https://zj.v.api.aa1.cn/api/douyinjx/?text=${encodeURIComponent(cleanUrl)}`,
+    `https://backend1.tioo.eu.org/douyin?url=${encodeURIComponent(cleanUrl)}`
+  ];
+
+  for (const ep of douyinApis) {
+    try {
+      const res = await fetch(ep, {
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+        signal: AbortSignal.timeout(7000)
+      });
+      const data = await res.json().catch(() => ({}));
+
+      // Tuyến A: zj.v.api.aa1.cn
+      if (data.code === 200 && data.data && data.data.video_Url && data.data.video_Url.startsWith('http')) {
+        const direct = data.data.video_Url;
+        return {
+          success: true,
+          type: 'douyin',
+          title: data.data.desc || 'Video Douyin (抖音)',
+          originalUrl: direct,
+          videoUrl: `/api/proxy-video?url=${encodeURIComponent(direct)}`
+        };
+      }
+
+      // Tuyến B: backend1
+      if (data.status && data.result && (data.result.video || data.result.nowatermark || data.result.play)) {
+        const direct = data.result.nowatermark || data.result.video || data.result.play;
+        return {
+          success: true,
+          type: 'douyin',
+          title: data.result.title || data.result.desc || 'Video Douyin (抖音)',
+          originalUrl: direct,
+          videoUrl: `/api/proxy-video?url=${encodeURIComponent(direct)}`
+        };
+      }
+    } catch (e) {
+      console.warn('Lỗi gọi API Douyin tuyến', ep.slice(0, 35), e.message);
+    }
+  }
+
+  // 2. Bóc tách trực tiếp theo redirect và RENDER_DATA / aweme_id
+  try {
+    const headRes = await fetch(cleanUrl, {
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+      },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(8000)
+    });
+
+    const finalUrl = headRes.url;
+    const html = await headRes.text();
+
+    const renderMatch = html.match(/<script id="RENDER_DATA" type="application\/json">(.*?)<\/script>/);
+    if (renderMatch) {
+      try {
+        const decoded = JSON.parse(decodeURIComponent(renderMatch[1]));
+        const jsonStr = JSON.stringify(decoded);
+        const urlMatch = jsonStr.match(/https?:\/\/[^"]*(?:aweme\.snssdk\.com|douyinvod\.com|douyinpic\.com)[^"]*play[^"]*/);
+        if (urlMatch) {
+          const direct = urlMatch[0].replace(/playwm/g, 'play');
+          return {
+            success: true,
+            type: 'douyin',
+            title: 'Video Douyin (抖音)',
+            originalUrl: direct,
+            videoUrl: `/api/proxy-video?url=${encodeURIComponent(direct)}`
+          };
+        }
+      } catch (e) {}
+    }
+
+    const idMatch = finalUrl.match(/\/video\/(\d+)/) || finalUrl.match(/modal_id=(\d+)/);
+    if (idMatch) {
+      const awemeId = idMatch[1];
+      const direct = `https://aweme.snssdk.com/aweme/v1/play/?video_id=${awemeId}&ratio=1080p&line=0`;
+      return {
+        success: true,
+        type: 'douyin',
+        title: `Video Douyin #${awemeId}`,
+        originalUrl: direct,
+        videoUrl: `/api/proxy-video?url=${encodeURIComponent(direct)}`
+      };
+    }
+  } catch (err) {
+    console.warn('Lỗi trích xuất Douyin trực tiếp:', err.message);
+  }
+
+  throw new Error("Không thể phân tích video Douyin. Hãy kiểm tra lại link chia sẻ từ Douyin (ví dụ: https://v.douyin.com/... hoặc https://www.douyin.com/video/...)");
+}
+
+  // 2. ENDPOINT PHÂN TÍCH & GIẢI MÃ LINK VIDEO: /api/resolve-video (Facebook, Douyin, TikTok, YouTube, Direct MP4)
   if (parsedUrl.pathname === '/api/resolve-video') {
-    const videoUrl = (parsedUrl.query.url || '').trim();
+    let videoUrl = (parsedUrl.query.url || '').trim();
     if (!videoUrl) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({ success: false, error: 'Vui lòng cung cấp link video qua tham số url!' }));
     }
 
+    // Tự động trích xuất URL nếu người dùng dán cả đoạn văn bản chia sẻ
+    const urlInText = videoUrl.match(/https?:\/\/[^\s]+/);
+    if (urlInText) {
+      videoUrl = urlInText[0];
+    }
+
     try {
-      // A. Phân tích Link TikTok (vm.tiktok.com, vt.tiktok.com, tiktok.com/@user/video/...)
-      if (videoUrl.includes('tiktok.com')) {
-        const formData = new URLSearchParams();
-        formData.append('url', videoUrl);
+      const lowerUrl = videoUrl.toLowerCase();
 
-        const tikRes = await fetch('https://www.tikwm.com/api/', {
-          method: 'POST',
-          body: formData,
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-          }
-        });
-
-        const tikData = await tikRes.json().catch(() => ({}));
-        if (tikData.code === 0 && tikData.data && (tikData.data.play || tikData.data.wmplay)) {
-          let directPlay = tikData.data.play || tikData.data.wmplay;
-          if (!directPlay.startsWith('http')) {
-            directPlay = 'https://www.tikwm.com' + directPlay;
-          }
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          return res.end(JSON.stringify({
-            success: true,
-            type: 'tiktok',
-            title: tikData.data.title || 'Video TikTok',
-            duration: tikData.data.duration || 0,
-            originalUrl: directPlay,
-            videoUrl: `/api/proxy-video?url=${encodeURIComponent(directPlay)}`
-          }));
-        } else {
-          throw new Error(tikData.msg || "Không thể phân tích video TikTok. Hãy kiểm tra lại đường dẫn!");
-        }
+      // A. Phân tích Link Facebook (facebook.com, fb.watch, fb.com)
+      if (lowerUrl.includes('facebook.com') || lowerUrl.includes('fb.watch') || lowerUrl.includes('fb.com')) {
+        const fbData = await resolveFacebookVideo(videoUrl);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(fbData));
       }
 
-      // B. Phân tích Link YouTube (youtube.com, youtu.be, shorts)
-      if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
+      // B. Phân tích Link Douyin - 抖音 (douyin.com, iesdouyin.com)
+      if (lowerUrl.includes('douyin.com') || lowerUrl.includes('iesdouyin.com')) {
+        const dyData = await resolveDouyinVideo(videoUrl);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(dyData));
+      }
+
+      // C. Phân tích Link TikTok (vm.tiktok.com, vt.tiktok.com, tiktok.com/@user/video/...)
+      if (lowerUrl.includes('tiktok.com')) {
+        // Tuyến 1: TikWM
+        try {
+          const formData = new URLSearchParams();
+          formData.append('url', videoUrl);
+
+          const tikRes = await fetch('https://www.tikwm.com/api/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            },
+            signal: AbortSignal.timeout(8000)
+          });
+
+          const tikData = await tikRes.json().catch(() => ({}));
+          if (tikData.code === 0 && tikData.data && (tikData.data.play || tikData.data.wmplay)) {
+            let directPlay = tikData.data.play || tikData.data.wmplay;
+            if (!directPlay.startsWith('http')) {
+              directPlay = 'https://www.tikwm.com' + directPlay;
+            }
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({
+              success: true,
+              type: 'tiktok',
+              title: tikData.data.title || 'Video TikTok',
+              duration: tikData.data.duration || 0,
+              originalUrl: directPlay,
+              videoUrl: `/api/proxy-video?url=${encodeURIComponent(directPlay)}`
+            }));
+          }
+        } catch (tikErr) {
+          console.warn('TikWM thất bại, chuyển sang API dự phòng:', tikErr.message);
+        }
+
+        // Tuyến 2: backend1 fallback
+        try {
+          const ttdlRes = await fetch('https://backend1.tioo.eu.org/ttdl?url=' + encodeURIComponent(videoUrl), {
+            signal: AbortSignal.timeout(8000)
+          });
+          const ttdlData = await ttdlRes.json().catch(() => ({}));
+          if (ttdlData.status && Array.isArray(ttdlData.video) && ttdlData.video.length > 0) {
+            const direct = ttdlData.video[0];
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({
+              success: true,
+              type: 'tiktok',
+              title: ttdlData.title || 'Video TikTok',
+              originalUrl: direct,
+              videoUrl: `/api/proxy-video?url=${encodeURIComponent(direct)}`
+            }));
+          }
+        } catch (ttdlErr) {}
+
+        throw new Error("Không thể phân tích video TikTok. Hãy kiểm tra lại đường dẫn chia sẻ!");
+      }
+
+      // D. Phân tích Link YouTube (youtube.com, youtu.be, shorts)
+      if (lowerUrl.includes('youtube.com') || lowerUrl.includes('youtu.be')) {
         if (!YtdlClass) {
           throw new Error("Mô-đun xử lý YouTube chưa sẵn sàng trên máy chủ.");
         }
@@ -228,7 +488,7 @@ const server = http.createServer(async (req, res) => {
         }));
       }
 
-      // C. Link Video Trực Tiếp (Direct MP4, WebM, etc.)
+      // E. Link Video Trực Tiếp (Direct MP4, WebM, etc.)
       res.writeHead(200, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({
         success: true,
@@ -259,9 +519,21 @@ const server = http.createServer(async (req, res) => {
     try {
       const targetUrl = decodeURIComponent(rawTarget);
       const parsedTarget = new URL(targetUrl);
+      const lowerTarget = targetUrl.toLowerCase();
+      let referer = targetUrl;
+      if (lowerTarget.includes('googlevideo') || lowerTarget.includes('youtube')) {
+        referer = 'https://www.youtube.com/';
+      } else if (lowerTarget.includes('tiktok') || lowerTarget.includes('byteoversea')) {
+        referer = 'https://www.tiktok.com/';
+      } else if (lowerTarget.includes('douyin') || lowerTarget.includes('snssdk') || lowerTarget.includes('douyinvod')) {
+        referer = 'https://www.douyin.com/';
+      } else if (lowerTarget.includes('fbcdn') || lowerTarget.includes('facebook')) {
+        referer = 'https://www.facebook.com/';
+      }
+
       const clientHeaders = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Referer': targetUrl.includes('googlevideo') ? 'https://www.youtube.com/' : (targetUrl.includes('tiktok') ? 'https://www.tiktok.com/' : targetUrl)
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Referer': referer
       };
 
       if (req.headers.range) {

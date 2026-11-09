@@ -1,15 +1,17 @@
 <!DOCTYPE html>
 <html lang="vi" class="dark">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>VocalFlow AI - Trình Chuyển Đổi Văn Bản Thành Giọng Nói (Text-to-Speech)</title>
-  
+
   <!-- Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -37,40 +39,53 @@
 
   <!-- Custom CSS -->
   <link rel="stylesheet" href="/css/styles.css?v=2.7.0">
-  
+
   <!-- PWA Manifest -->
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#6366f1">
 </head>
-<body class="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans antialiased selection:bg-indigo-500 selection:text-white relative overflow-x-hidden transition-colors duration-300">
+
+<body
+  class="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans antialiased selection:bg-indigo-500 selection:text-white relative overflow-x-hidden transition-colors duration-300">
 
   <!-- Hiệu ứng nền Gradient Mesh lơ lửng -->
   <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
-    <div class="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-indigo-500/15 dark:bg-indigo-600/20 blur-3xl bg-orb"></div>
-    <div class="absolute top-1/3 -right-32 w-96 h-96 rounded-full bg-violet-500/15 dark:bg-violet-600/20 blur-3xl bg-orb" style="animation-delay: -5s;"></div>
-    <div class="absolute -bottom-32 left-1/4 w-96 h-96 rounded-full bg-cyan-500/15 dark:bg-cyan-600/15 blur-3xl bg-orb" style="animation-delay: -9s;"></div>
+    <div
+      class="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-indigo-500/15 dark:bg-indigo-600/20 blur-3xl bg-orb">
+    </div>
+    <div
+      class="absolute top-1/3 -right-32 w-96 h-96 rounded-full bg-violet-500/15 dark:bg-violet-600/20 blur-3xl bg-orb"
+      style="animation-delay: -5s;"></div>
+    <div class="absolute -bottom-32 left-1/4 w-96 h-96 rounded-full bg-cyan-500/15 dark:bg-cyan-600/15 blur-3xl bg-orb"
+      style="animation-delay: -9s;"></div>
   </div>
 
   <!-- Vùng chứa Toast Notification -->
   <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-2.5 pointer-events-none"></div>
 
   <!-- Header chính -->
-  <header class="sticky top-0 z-40 border-b border-slate-200/80 dark:border-slate-800/80 glass-card px-4 sm:px-8 py-3.5 transition-colors">
+  <header
+    class="sticky top-0 z-40 border-b border-slate-200/80 dark:border-slate-800/80 glass-card px-4 sm:px-8 py-3.5 transition-colors">
     <div class="max-w-6xl mx-auto flex items-center justify-between">
-      
+
       <!-- Logo và Tiêu đề -->
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-violet-600 to-cyan-400 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+        <div
+          class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-violet-600 to-cyan-400 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z">
+            </path>
           </svg>
         </div>
         <div>
           <div class="flex items-center gap-2">
-            <h1 class="text-lg sm:text-xl font-bold bg-gradient-to-r from-indigo-600 via-violet-600 to-cyan-500 dark:from-indigo-400 dark:via-violet-300 dark:to-cyan-300 bg-clip-text text-transparent">
+            <h1
+              class="text-lg sm:text-xl font-bold bg-gradient-to-r from-indigo-600 via-violet-600 to-cyan-500 dark:from-indigo-400 dark:via-violet-300 dark:to-cyan-300 bg-clip-text text-transparent">
               VocalFlow AI
             </h1>
-            <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/60 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-700/50">
+            <span
+              class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/60 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-700/50">
               v2.5 Free APIs
             </span>
           </div>
@@ -82,35 +97,46 @@
 
       <!-- Nút điều hướng, Dark/Light Mode, Cài đặt -->
       <div class="flex items-center gap-2 sm:gap-3">
-        
+
         <!-- Nút Lấy mã nhúng (Embed Widget) -->
-        <button id="embedBtn" title="Lấy mã nhúng Widget vào website của bạn" class="p-2 sm:px-3 sm:py-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 border border-transparent hover:border-slate-300 dark:hover:border-slate-700 transition flex items-center gap-1.5 text-xs sm:text-sm font-medium">
+        <button id="embedBtn" title="Lấy mã nhúng Widget vào website của bạn"
+          class="p-2 sm:px-3 sm:py-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 border border-transparent hover:border-slate-300 dark:hover:border-slate-700 transition flex items-center gap-1.5 text-xs sm:text-sm font-medium">
           <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
           </svg>
           <span class="hidden sm:inline">Mã nhúng</span>
         </button>
 
         <!-- Nút Cài đặt API -->
-        <button id="settingsBtn" title="Cài đặt API & Cấu hình" class="p-2 sm:px-3 sm:py-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 border border-transparent hover:border-slate-300 dark:hover:border-slate-700 transition flex items-center gap-1.5 text-xs sm:text-sm font-medium">
+        <button id="settingsBtn" title="Cài đặt API & Cấu hình"
+          class="p-2 sm:px-3 sm:py-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 border border-transparent hover:border-slate-300 dark:hover:border-slate-700 transition flex items-center gap-1.5 text-xs sm:text-sm font-medium">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+            </path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z">
+            </path>
           </svg>
           <span class="hidden sm:inline">Cài đặt API</span>
         </button>
 
         <!-- Nút chuyển đổi Dark/Light mode -->
-        <button id="themeToggle" title="Chuyển chế độ Sáng/Tối" class="p-2 sm:px-3 sm:py-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 border border-transparent hover:border-slate-300 dark:hover:border-slate-700 transition flex items-center gap-1.5">
+        <button id="themeToggle" title="Chuyển chế độ Sáng/Tối"
+          class="p-2 sm:px-3 sm:py-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 border border-transparent hover:border-slate-300 dark:hover:border-slate-700 transition flex items-center gap-1.5">
           <!-- Icon Sun (Hiện khi dark) -->
           <svg class="w-4 h-4 hidden dark:block text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z">
+            </path>
           </svg>
           <!-- Icon Moon (Hiện khi light) -->
           <svg class="w-4 h-4 block dark:hidden text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
           </svg>
-          <span class="text-xs sm:text-sm font-medium hidden sm:inline dark:text-amber-300 text-indigo-700">Chế độ</span>
+          <span class="text-xs sm:text-sm font-medium hidden sm:inline dark:text-amber-300 text-indigo-700">Chế
+            độ</span>
         </button>
 
       </div>
@@ -122,48 +148,61 @@
 
     <!-- KHỐI 1: Ô NHẬP VĂN BẢN VÀ MẪU CÓ SẴN -->
     <section class="glass-card rounded-2xl p-4 sm:p-6 transition-all duration-300">
-      
+
       <!-- Thanh công cụ phía trên textarea -->
       <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
-        
+
         <!-- Chọn văn bản mẫu -->
         <div class="flex items-center gap-2 flex-1 min-w-[240px]">
           <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 shrink-0">
             Mẫu có sẵn:
           </span>
-          <select id="templateSelect" class="glass-input text-xs sm:text-sm rounded-lg px-3 py-1.5 w-full max-w-xs focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+          <select id="templateSelect"
+            class="glass-input text-xs sm:text-sm rounded-lg px-3 py-1.5 w-full max-w-xs focus:ring-2 focus:ring-indigo-500 cursor-pointer">
             <option value="">⚡ Chọn văn bản mẫu thử nghiệm...</option>
           </select>
         </div>
 
         <!-- Các nút thao tác nhanh: Mic, File, Dán, Xóa -->
         <div class="flex items-center gap-2">
-          
-          <button id="micBtn" title="Đọc văn bản bằng giọng nói (Voice Dictation / Speech-to-Text)" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 transition flex items-center gap-1.5">
+
+          <button id="micBtn" title="Đọc văn bản bằng giọng nói (Voice Dictation / Speech-to-Text)"
+            class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 transition flex items-center gap-1.5">
             <svg id="micIcon" class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z">
+              </path>
             </svg>
             <span id="micText">Nhập bằng mic</span>
           </button>
 
           <input type="file" id="textFileInput" accept=".txt,.md,.json,.csv" class="hidden">
-          <button id="importFileBtn" title="Tải tệp văn bản từ máy tính (.txt, .md...)" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 transition flex items-center gap-1.5">
+          <button id="importFileBtn" title="Tải tệp văn bản từ máy tính (.txt, .md...)"
+            class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 transition flex items-center gap-1.5">
             <svg class="w-3.5 h-3.5 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+              </path>
             </svg>
             <span>Mở tệp .txt</span>
           </button>
 
-          <button id="pasteTextBtn" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 transition flex items-center gap-1.5">
+          <button id="pasteTextBtn"
+            class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 transition flex items-center gap-1.5">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
+              </path>
             </svg>
             <span>Dán</span>
           </button>
-          
-          <button id="clearTextBtn" class="px-3 py-1.5 rounded-lg text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200 dark:border-rose-900/40 transition flex items-center gap-1.5">
+
+          <button id="clearTextBtn"
+            class="px-3 py-1.5 rounded-lg text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200 dark:border-rose-900/40 transition flex items-center gap-1.5">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+              </path>
             </svg>
             <span>Xóa nhanh</span>
           </button>
@@ -173,23 +212,27 @@
       <!-- Thanh công cụ chèn khoảng nghỉ (Pause Chips) -->
       <div class="flex items-center gap-2 mb-2 text-[11px] text-slate-500 overflow-x-auto pb-1">
         <span class="shrink-0 font-medium text-slate-400">Chèn khoảng nghỉ:</span>
-        <button type="button" class="insert-pause-chip px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950 text-indigo-600 dark:text-indigo-400 border border-slate-200 dark:border-slate-700 transition shrink-0" data-pause="... ">+ Nghỉ 0.5s (...)</button>
-        <button type="button" class="insert-pause-chip px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950 text-indigo-600 dark:text-indigo-400 border border-slate-200 dark:border-slate-700 transition shrink-0" data-pause=" —— ">+ Nghỉ 1s (——)</button>
-        <button type="button" class="insert-pause-chip px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950 text-indigo-600 dark:text-indigo-400 border border-slate-200 dark:border-slate-700 transition shrink-0" data-pause="... ... ">+ Nghỉ 2s</button>
+        <button type="button"
+          class="insert-pause-chip px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950 text-indigo-600 dark:text-indigo-400 border border-slate-200 dark:border-slate-700 transition shrink-0"
+          data-pause="... ">+ Nghỉ 0.5s (...)</button>
+        <button type="button"
+          class="insert-pause-chip px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950 text-indigo-600 dark:text-indigo-400 border border-slate-200 dark:border-slate-700 transition shrink-0"
+          data-pause=" —— ">+ Nghỉ 1s (——)</button>
+        <button type="button"
+          class="insert-pause-chip px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950 text-indigo-600 dark:text-indigo-400 border border-slate-200 dark:border-slate-700 transition shrink-0"
+          data-pause="... ... ">+ Nghỉ 2s</button>
       </div>
 
       <!-- Textarea chính -->
       <div class="relative">
-        <textarea 
-          id="textInput" 
-          rows="5" 
+        <textarea id="textInput" rows="5"
           placeholder="Nhập hoặc dán đoạn văn bản bạn muốn chuyển đổi thành giọng nói tại đây..."
-          class="w-full glass-input rounded-xl p-4 text-sm sm:text-base leading-relaxed resize-y min-h-[140px] max-h-[450px] placeholder:text-slate-400 dark:placeholder:text-slate-500 font-normal focus:ring-2 focus:ring-indigo-500 transition-all"
-        ></textarea>
+          class="w-full glass-input rounded-xl p-4 text-sm sm:text-base leading-relaxed resize-y min-h-[140px] max-h-[450px] placeholder:text-slate-400 dark:placeholder:text-slate-500 font-normal focus:ring-2 focus:ring-indigo-500 transition-all"></textarea>
       </div>
 
       <!-- Bộ đếm ký tự và thời gian đọc dự kiến theo thời gian thực -->
-      <div class="flex flex-wrap items-center justify-between gap-3 mt-3 pt-3 border-t border-slate-200/60 dark:border-slate-800/80 text-xs text-slate-500 dark:text-slate-400">
+      <div
+        class="flex flex-wrap items-center justify-between gap-3 mt-3 pt-3 border-t border-slate-200/60 dark:border-slate-800/80 text-xs text-slate-500 dark:text-slate-400">
         <div class="flex items-center gap-4">
           <div class="flex items-center gap-1.5">
             <span class="font-medium text-slate-700 dark:text-slate-300" id="charCount">0</span>
@@ -202,9 +245,11 @@
           </div>
         </div>
 
-        <div class="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-3 py-1 rounded-full border border-indigo-100 dark:border-indigo-900/50">
+        <div
+          class="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-3 py-1 rounded-full border border-indigo-100 dark:border-indigo-900/50">
           <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
           <span>Thời gian đọc dự kiến:</span>
           <strong id="estTime" class="font-bold">~0 giây</strong>
@@ -215,31 +260,37 @@
 
     <!-- KHỐI 2: BẢNG ĐIỀU KHIỂN NGUỒN GIỌNG ĐỌC & CÁC THANH TRƯỢT THÔNG SỐ -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      
+
       <!-- Cột trái: Lựa chọn Nguồn và Giọng đọc cụ thể (7 cols) -->
       <section class="lg:col-span-7 glass-card rounded-2xl p-5 sm:p-6 space-y-5">
         <div class="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800/80 pb-3">
           <div class="flex items-center gap-2">
-            <div class="w-7 h-7 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+            <div
+              class="w-7 h-7 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z">
+                </path>
               </svg>
             </div>
             <h2 class="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100">
               Nguồn Giọng Đọc (Multi-Source Engine)
             </h2>
           </div>
-          <span class="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/40">
+          <span
+            class="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/40">
             Đang hoạt động
           </span>
         </div>
 
         <!-- 1. Chọn Nguồn phát -->
         <div>
-          <label for="sourceSelect" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+          <label for="sourceSelect"
+            class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
             1. Chọn Nền tảng / Công nghệ giọng đọc:
           </label>
-          <select id="sourceSelect" class="glass-input w-full rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+          <select id="sourceSelect"
+            class="glass-input w-full rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-indigo-500 cursor-pointer">
             <option value="browser" selected>🌐 Giọng Trình duyệt (Web Speech API - Ngoại tuyến, 0 đỗ trễ)</option>
             <option value="google">🚀 Google Translate TTS (Miễn phí công khai, tự nhiên, không cần API Key)</option>
             <option value="huggingface">🤖 Hugging Face AI Neural (Meta MMS Việt/Anh - Mô hình AI mã nguồn mở)</option>
@@ -252,12 +303,14 @@
           <!-- Nhóm Giọng Trình duyệt (Browser) -->
           <div id="browserVoiceGroup" class="space-y-2">
             <div class="flex items-center justify-between">
-              <label for="browserVoiceSelect" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <label for="browserVoiceSelect"
+                class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 2. Chọn Giọng đọc cài sẵn trong hệ điều hành / trình duyệt:
               </label>
               <span class="text-[10px] text-indigo-500 dark:text-indigo-400">⚡ Offline 100%</span>
             </div>
-            <select id="browserVoiceSelect" class="glass-input w-full rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+            <select id="browserVoiceSelect"
+              class="glass-input w-full rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 cursor-pointer">
               <option value="">(Đang tải danh sách giọng nói...)</option>
             </select>
             <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
@@ -268,12 +321,14 @@
           <!-- Nhóm Google TTS Free API -->
           <div id="googleVoiceGroup" class="hidden space-y-2">
             <div class="flex items-center justify-between">
-              <label for="googleLangSelect" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <label for="googleLangSelect"
+                class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 2. Chọn Ngôn ngữ Google TTS:
               </label>
               <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">Miễn phí 100%</span>
             </div>
-            <select id="googleLangSelect" class="glass-input w-full rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+            <select id="googleLangSelect"
+              class="glass-input w-full rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 cursor-pointer">
               <option value="vi" selected>🇻🇳 Tiếng Việt (Giọng chuẩn tự nhiên)</option>
               <option value="en">🇺🇸 Tiếng Anh (English - US)</option>
               <option value="en-gb">🇬🇧 Tiếng Anh (English - UK)</option>
@@ -293,31 +348,36 @@
           <!-- Nhóm Hugging Face AI -->
           <div id="hfVoiceGroup" class="hidden space-y-2">
             <div class="flex items-center justify-between">
-              <label for="hfModelSelect" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <label for="hfModelSelect"
+                class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 2. Chọn Mô hình AI TTS trên Hugging Face:
               </label>
               <span class="text-[10px] text-violet-500 dark:text-violet-400 font-medium">Inference API</span>
             </div>
-            <select id="hfModelSelect" class="glass-input w-full rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+            <select id="hfModelSelect"
+              class="glass-input w-full rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 cursor-pointer">
               <option value="facebook/mms-tts-vie" selected>🇻🇳 Meta MMS Vietnamese (facebook/mms-tts-vie)</option>
               <option value="facebook/mms-tts-eng">🇺🇸 Meta MMS English (facebook/mms-tts-eng)</option>
               <option value="kakao-enterprise/vits-ljspeech">🇺🇸 Kakao VITS LJSpeech (Chất lượng cao)</option>
               <option value="espnet/kan-bayashi_ljspeech_vits">🇺🇸 ESPnet VITS LJSpeech</option>
             </select>
             <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
-              🧠 Mô hình AI Deep Learning sinh âm thanh WAV tự nhiên. Có thể cấu hình Hugging Face Token miễn phí trong Cài đặt để tránh chờ đợi.
+              🧠 Mô hình AI Deep Learning sinh âm thanh WAV tự nhiên. Có thể cấu hình Hugging Face Token miễn phí trong
+              Cài đặt để tránh chờ đợi.
             </p>
           </div>
 
           <!-- Nhóm ElevenLabs Studio -->
           <div id="elevenVoiceGroup" class="hidden space-y-2">
             <div class="flex items-center justify-between">
-              <label for="elevenVoiceSelect" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <label for="elevenVoiceSelect"
+                class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 2. Chọn Giọng đọc ElevenLabs:
               </label>
               <span class="text-[10px] text-amber-500 font-medium">Ultra-Realistic</span>
             </div>
-            <select id="elevenVoiceSelect" class="glass-input w-full rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+            <select id="elevenVoiceSelect"
+              class="glass-input w-full rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 cursor-pointer">
               <option value="21m00Tcm4TlvDq8ikWAM" selected>Rachel (Nữ - Truyền cảm, Tự nhiên)</option>
               <option value="pNInz6obpgDQGcFmaJgB">Adam (Nam - Trầm ấm, Kể chuyện)</option>
               <option value="ErXwobaYiN019PkySvjV">Antoni (Nam - Thanh lịch, Tin tức)</option>
@@ -325,7 +385,10 @@
               <option value="MF3mGyEYCl7XYWbV9V6O">Elli (Nữ - Trẻ trung, Năng động)</option>
             </select>
             <p class="text-[11px] text-amber-600 dark:text-amber-400 leading-tight">
-              ⚠️ Lưu ý: Theo chính sách mới của ElevenLabs, tài khoản miễn phí (Free Plan) không được gọi API cho giọng thư viện (báo lỗi <code>paid_plan_required</code>). Nếu chưa nâng cấp gói trả phí, bạn hãy chọn <strong>Google Translate TTS</strong> (Miễn phí 100%, không cần tài khoản hay thẻ) để phát và xuất video không giới hạn!
+              ⚠️ Lưu ý: Theo chính sách mới của ElevenLabs, tài khoản miễn phí (Free Plan) không được gọi API cho giọng
+              thư viện (báo lỗi <code>paid_plan_required</code>). Nếu chưa nâng cấp gói trả phí, bạn hãy chọn
+              <strong>Google Translate TTS</strong> (Miễn phí 100%, không cần tài khoản hay thẻ) để phát và xuất video
+              không giới hạn!
             </p>
           </div>
         </div>
@@ -336,18 +399,24 @@
       <section class="lg:col-span-5 glass-card rounded-2xl p-5 sm:p-6 space-y-5">
         <div class="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800/80 pb-3">
           <div class="flex items-center gap-2">
-            <div class="w-7 h-7 rounded-lg bg-violet-100 dark:bg-violet-900/50 text-violet-600 dark:text-violet-400 flex items-center justify-center">
+            <div
+              class="w-7 h-7 rounded-lg bg-violet-100 dark:bg-violet-900/50 text-violet-600 dark:text-violet-400 flex items-center justify-center">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4">
+                </path>
               </svg>
             </div>
             <h2 class="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100">
               Hiệu Chỉnh Âm Thanh
             </h2>
           </div>
-          <button id="resetParamsBtn" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1">
+          <button id="resetParamsBtn"
+            class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+              </path>
             </svg>
             <span>Đặt lại</span>
           </button>
@@ -357,19 +426,12 @@
         <div class="space-y-1.5">
           <div class="flex items-center justify-between text-xs font-semibold">
             <span class="text-slate-600 dark:text-slate-300">Tốc độ (Speed / Rate)</span>
-            <span id="rateValue" class="text-indigo-600 dark:text-indigo-400 font-mono px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900/60">
+            <span id="rateValue"
+              class="text-indigo-600 dark:text-indigo-400 font-mono px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900/60">
               1.00x
             </span>
           </div>
-          <input 
-            type="range" 
-            id="rateSlider" 
-            min="0.5" 
-            max="2.0" 
-            step="0.05" 
-            value="1.0" 
-            class="w-full"
-          >
+          <input type="range" id="rateSlider" min="0.5" max="2.0" step="0.05" value="1.0" class="w-full">
           <div class="flex justify-between text-[10px] text-slate-400">
             <span>0.5x (Chậm)</span>
             <span>1.0x (Chuẩn)</span>
@@ -380,10 +442,18 @@
           <div class="flex items-center gap-1.5 pt-1">
             <span class="text-[10px] text-slate-400">Chọn nhanh:</span>
             <div class="flex items-center gap-1">
-              <button type="button" class="speed-preset-btn px-2 py-0.5 rounded text-[10px] font-medium bg-slate-200/60 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-slate-700 dark:text-slate-300 transition" data-speed="0.75">0.75x</button>
-              <button type="button" class="speed-preset-btn px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 font-bold transition" data-speed="1.0">1.0x</button>
-              <button type="button" class="speed-preset-btn px-2 py-0.5 rounded text-[10px] font-medium bg-slate-200/60 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-slate-700 dark:text-slate-300 transition" data-speed="1.25">1.25x</button>
-              <button type="button" class="speed-preset-btn px-2 py-0.5 rounded text-[10px] font-medium bg-slate-200/60 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-slate-700 dark:text-slate-300 transition" data-speed="1.5">1.5x</button>
+              <button type="button"
+                class="speed-preset-btn px-2 py-0.5 rounded text-[10px] font-medium bg-slate-200/60 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-slate-700 dark:text-slate-300 transition"
+                data-speed="0.75">0.75x</button>
+              <button type="button"
+                class="speed-preset-btn px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 font-bold transition"
+                data-speed="1.0">1.0x</button>
+              <button type="button"
+                class="speed-preset-btn px-2 py-0.5 rounded text-[10px] font-medium bg-slate-200/60 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-slate-700 dark:text-slate-300 transition"
+                data-speed="1.25">1.25x</button>
+              <button type="button"
+                class="speed-preset-btn px-2 py-0.5 rounded text-[10px] font-medium bg-slate-200/60 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-slate-700 dark:text-slate-300 transition"
+                data-speed="1.5">1.5x</button>
             </div>
           </div>
         </div>
@@ -392,19 +462,12 @@
         <div class="space-y-1.5">
           <div class="flex items-center justify-between text-xs font-semibold">
             <span class="text-slate-600 dark:text-slate-300">Cao độ (Pitch)</span>
-            <span id="pitchValue" class="text-violet-600 dark:text-violet-400 font-mono px-2 py-0.5 rounded bg-violet-50 dark:bg-violet-950/60 border border-violet-100 dark:border-violet-900/60">
+            <span id="pitchValue"
+              class="text-violet-600 dark:text-violet-400 font-mono px-2 py-0.5 rounded bg-violet-50 dark:bg-violet-950/60 border border-violet-100 dark:border-violet-900/60">
               1.00
             </span>
           </div>
-          <input 
-            type="range" 
-            id="pitchSlider" 
-            min="0.5" 
-            max="1.5" 
-            step="0.05" 
-            value="1.0" 
-            class="w-full"
-          >
+          <input type="range" id="pitchSlider" min="0.5" max="1.5" step="0.05" value="1.0" class="w-full">
           <div class="flex justify-between text-[10px] text-slate-400">
             <span>Trầm (0.5)</span>
             <span>Tự nhiên (1.0)</span>
@@ -416,19 +479,12 @@
         <div class="space-y-1.5">
           <div class="flex items-center justify-between text-xs font-semibold">
             <span class="text-slate-600 dark:text-slate-300">Âm lượng (Volume)</span>
-            <span id="volumeValue" class="text-cyan-600 dark:text-cyan-400 font-mono px-2 py-0.5 rounded bg-cyan-50 dark:bg-cyan-950/60 border border-cyan-100 dark:border-cyan-900/60">
+            <span id="volumeValue"
+              class="text-cyan-600 dark:text-cyan-400 font-mono px-2 py-0.5 rounded bg-cyan-50 dark:bg-cyan-950/60 border border-cyan-100 dark:border-cyan-900/60">
               100%
             </span>
           </div>
-          <input 
-            type="range" 
-            id="volumeSlider" 
-            min="0" 
-            max="100" 
-            step="1" 
-            value="100" 
-            class="w-full"
-          >
+          <input type="range" id="volumeSlider" min="0" max="100" step="1" value="100" class="w-full">
           <div class="flex justify-between text-[10px] text-slate-400">
             <span>0%</span>
             <span>50%</span>
@@ -442,11 +498,13 @@
 
     <!-- KHỐI 3: TRUNG TÂM PHÁT ÂM THANH, SÓNG ÂM CANVAS & TẢI XUỐNG -->
     <section class="glass-card rounded-2xl p-5 sm:p-6 transition-all duration-300">
-      
+
       <!-- Waveform Visualizer Canvas -->
-      <div class="relative w-full h-20 sm:h-24 bg-slate-100/70 dark:bg-slate-900/80 rounded-xl overflow-hidden border border-slate-200/60 dark:border-slate-800/80 mb-5 flex items-center justify-center">
+      <div
+        class="relative w-full h-20 sm:h-24 bg-slate-100/70 dark:bg-slate-900/80 rounded-xl overflow-hidden border border-slate-200/60 dark:border-slate-800/80 mb-5 flex items-center justify-center">
         <canvas id="waveformCanvas" class="w-full h-full block"></canvas>
-        <div class="absolute bottom-1.5 right-2 text-[10px] text-slate-400 dark:text-slate-500 font-mono flex items-center gap-1 select-none pointer-events-none">
+        <div
+          class="absolute bottom-1.5 right-2 text-[10px] text-slate-400 dark:text-slate-500 font-mono flex items-center gap-1 select-none pointer-events-none">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block pulse-indicator"></span>
           <span>Audio Reactive Visualizer</span>
         </div>
@@ -454,45 +512,43 @@
 
       <!-- Hàng nút điều khiển chính -->
       <div class="flex flex-wrap items-center justify-between gap-4">
-        
+
         <!-- Nhóm nút Phát / Tạm dừng / Dừng lại -->
         <div class="flex items-center gap-2.5 sm:gap-3">
-          
+
           <!-- Nút Phát chính -->
-          <button 
-            id="playBtn" 
-            class="glow-button px-6 py-2.5 rounded-xl font-semibold text-white shadow-lg shadow-indigo-500/25 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95"
-          >
+          <button id="playBtn"
+            class="glow-button px-6 py-2.5 rounded-xl font-semibold text-white shadow-lg shadow-indigo-500/25 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95">
             <span id="playBtnIcon">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z">
+                </path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
             </span>
             <span id="playBtnText">Phát giọng đọc</span>
           </button>
 
           <!-- Nút Tạm dừng -->
-          <button 
-            id="pauseBtn" 
-            title="Tạm dừng đọc"
-            class="px-4 py-2.5 rounded-xl font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 border border-slate-300 dark:border-slate-700 transition flex items-center gap-1.5 text-sm"
-          >
+          <button id="pauseBtn" title="Tạm dừng đọc"
+            class="px-4 py-2.5 rounded-xl font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 border border-slate-300 dark:border-slate-700 transition flex items-center gap-1.5 text-sm">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
             <span>Tạm dừng</span>
           </button>
 
           <!-- Nút Dừng lại -->
-          <button 
-            id="stopBtn" 
-            title="Dừng hẳn và tua về đầu"
-            class="px-4 py-2.5 rounded-xl font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200 dark:border-rose-900/40 transition flex items-center gap-1.5 text-sm"
-          >
+          <button id="stopBtn" title="Dừng hẳn và tua về đầu"
+            class="px-4 py-2.5 rounded-xl font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200 dark:border-rose-900/40 transition flex items-center gap-1.5 text-sm">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path>
             </svg>
             <span>Dừng lại</span>
           </button>
@@ -500,26 +556,26 @@
 
         <!-- Nhóm nút Tải xuống âm thanh & Xuất Video -->
         <div class="flex flex-wrap items-center gap-2.5">
-          <button 
-            id="downloadBtn" 
-            class="px-4 sm:px-5 py-2.5 rounded-xl font-semibold text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 shadow-sm hover:shadow transition flex items-center gap-2 text-sm"
-          >
+          <button id="downloadBtn"
+            class="px-4 sm:px-5 py-2.5 rounded-xl font-semibold text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 shadow-sm hover:shadow transition flex items-center gap-2 text-sm">
             <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
             </svg>
             <span>Tải MP3</span>
-            <span id="downloadFormatBadge" class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
+            <span id="downloadFormatBadge"
+              class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
               MP3 / WAV
             </span>
           </button>
 
           <!-- Nút Xuất Video -->
-          <button 
-            id="openVideoStudioBtn" 
-            class="glow-button px-4 sm:px-5 py-2.5 rounded-xl font-semibold text-white bg-gradient-to-r from-violet-600 via-purple-600 to-pink-600 hover:from-violet-500 hover:to-pink-500 shadow-lg shadow-purple-500/20 transition flex items-center gap-2 text-sm active:scale-95 cursor-pointer"
-          >
+          <button id="openVideoStudioBtn"
+            class="glow-button px-4 sm:px-5 py-2.5 rounded-xl font-semibold text-white bg-gradient-to-r from-violet-600 via-purple-600 to-pink-600 hover:from-violet-500 hover:to-pink-500 shadow-lg shadow-purple-500/20 transition flex items-center gap-2 text-sm active:scale-95 cursor-pointer">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z">
+              </path>
             </svg>
             <span>Xuất Video</span>
             <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/20 text-white">Lồng nhạc & Ảnh</span>
@@ -531,22 +587,29 @@
     </section>
 
     <!-- KHỐI 3.5: XƯỞNG XUẤT VIDEO TRỰC TIẾP (LỒNG NHẠC NỀN & GẮN HÌNH NỀN) -->
-    <section id="videoStudioSection" class="glass-card rounded-2xl p-5 sm:p-6 transition-all duration-300 space-y-6 border-2 border-indigo-500/30 shadow-xl shadow-indigo-500/5">
-      
+    <section id="videoStudioSection"
+      class="glass-card rounded-2xl p-5 sm:p-6 transition-all duration-300 space-y-6 border-2 border-indigo-500/30 shadow-xl shadow-indigo-500/5">
+
       <!-- Tiêu đề Khối Video -->
-      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/60 dark:border-slate-800/80 pb-4">
+      <div
+        class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/60 dark:border-slate-800/80 pb-4">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-pink-500 text-white flex items-center justify-center shadow-lg shadow-purple-500/30">
+          <div
+            class="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-pink-500 text-white flex items-center justify-center shadow-lg shadow-purple-500/30">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z">
+              </path>
             </svg>
           </div>
           <div>
             <div class="flex items-center gap-2">
-              <h2 class="text-base sm:text-lg font-bold bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-500 dark:from-purple-400 dark:via-indigo-300 dark:to-pink-300 bg-clip-text text-transparent">
+              <h2
+                class="text-base sm:text-lg font-bold bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-500 dark:from-purple-400 dark:via-indigo-300 dark:to-pink-300 bg-clip-text text-transparent">
                 Xưởng Xuất Video Tự Động (Lồng Nhạc Nền & Gắn Hình Nền)
               </h2>
-              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-pink-100 text-pink-700 dark:bg-pink-950/80 dark:text-pink-300 border border-pink-300 dark:border-pink-800">
+              <span
+                class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-pink-100 text-pink-700 dark:bg-pink-950/80 dark:text-pink-300 border border-pink-300 dark:border-pink-800">
                 Tính năng mới
               </span>
             </div>
@@ -557,7 +620,8 @@
         </div>
 
         <div class="flex items-center gap-2">
-          <span class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40 flex items-center gap-1.5">
+          <span
+            class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40 flex items-center gap-1.5">
             <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
             <span>Sẵn sàng kết xuất</span>
           </span>
@@ -566,37 +630,48 @@
 
       <!-- Nội dung 2 Cột: Xem trước & Cấu hình -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        
+
         <!-- Cột Trái: Màn hình Preview Canvas (5 cols) -->
         <div class="lg:col-span-5 flex flex-col items-center space-y-3.5">
-          <div class="w-full flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
+          <div
+            class="w-full flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
             <span>Màn hình xem trước (Live Preview):</span>
-            <span id="previewAspectBadge" class="text-[10px] px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 font-mono">16:9 Landscape</span>
+            <span id="previewAspectBadge"
+              class="text-[10px] px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 font-mono">16:9
+              Landscape</span>
           </div>
 
           <!-- Màn hình Canvas Preview -->
-          <div class="w-full relative rounded-2xl overflow-hidden shadow-2xl border border-slate-300 dark:border-slate-700 bg-slate-950 flex items-center justify-center min-h-[220px]">
+          <div
+            class="w-full relative rounded-2xl overflow-hidden shadow-2xl border border-slate-300 dark:border-slate-700 bg-slate-950 flex items-center justify-center min-h-[220px]">
             <canvas id="videoPreviewCanvas" class="w-full h-auto max-h-[380px] block object-contain"></canvas>
-            
+
             <!-- Overlay khi đang render -->
-            <div id="renderOverlay" class="absolute inset-0 bg-slate-950/90 backdrop-blur-md hidden flex-col items-center justify-center p-6 text-center space-y-3.5 z-20">
+            <div id="renderOverlay"
+              class="absolute inset-0 bg-slate-950/90 backdrop-blur-md hidden flex-col items-center justify-center p-6 text-center space-y-3.5 z-20">
               <div class="w-12 h-12 rounded-full border-4 border-indigo-500/20 border-t-indigo-500 animate-spin"></div>
               <div class="text-sm font-bold text-white" id="renderStatusText">Đang khởi tạo video...</div>
               <div class="w-full max-w-xs bg-slate-800 rounded-full h-2.5 overflow-hidden">
-                <div id="renderProgressBar" class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 h-2.5 rounded-full transition-all duration-150" style="width: 0%"></div>
+                <div id="renderProgressBar"
+                  class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 h-2.5 rounded-full transition-all duration-150"
+                  style="width: 0%"></div>
               </div>
               <p class="text-[11px] text-slate-400">Vui lòng không chuyển tab trong quá trình ghi hình video.</p>
             </div>
           </div>
 
           <!-- Thông báo thành công & Tải video -->
-          <div id="renderSuccessBox" class="w-full hidden space-y-2 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-200">
+          <div id="renderSuccessBox"
+            class="w-full hidden space-y-2 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-200">
             <div class="flex items-center gap-2 font-bold text-sm">
-              <svg class="w-5 h-5 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+              <svg class="w-5 h-5 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
               <span>Kết xuất video hoàn tất!</span>
             </div>
             <p class="text-[11px]">Tệp video đã được tự động lưu về máy tính của bạn.</p>
-            <a id="downloadVideoDirectLink" href="#" download="vocalflow-video.mp4" class="inline-flex items-center gap-1.5 font-bold text-indigo-600 dark:text-indigo-400 hover:underline text-xs mt-1">
+            <a id="downloadVideoDirectLink" href="#" download="vocalflow-video.mp4"
+              class="inline-flex items-center gap-1.5 font-bold text-indigo-600 dark:text-indigo-400 hover:underline text-xs mt-1">
               ⬇ Nhấn vào đây nếu muốn tải lại tệp video MP4
             </a>
           </div>
@@ -604,34 +679,51 @@
 
         <!-- Cột Phải: Bảng điều khiển cấu hình Hình nền & Nhạc nền (7 cols) -->
         <div class="lg:col-span-7 space-y-4 text-xs sm:text-sm">
-          
+
           <!-- 1. Tỉ lệ khung hình (16:9 vs 9:16) -->
           <div>
             <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
               1. Tỉ lệ khung hình (Aspect Ratio):
             </label>
             <div class="grid grid-cols-2 gap-2.5">
-              <button type="button" id="ar169Btn" class="ar-btn p-3 rounded-xl border border-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 font-bold flex items-center justify-center gap-2 transition cursor-pointer" data-ar="16:9">
-                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+              <button type="button" id="ar169Btn"
+                class="ar-btn p-3 rounded-xl border border-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 font-bold flex items-center justify-center gap-2 transition cursor-pointer"
+                data-ar="16:9">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
+                  </path>
+                </svg>
                 <span>16:9 Ngang (YouTube / Web)</span>
               </button>
-              <button type="button" id="ar916Btn" class="ar-btn p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium flex items-center justify-center gap-2 transition cursor-pointer" data-ar="9:16">
-                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+              <button type="button" id="ar916Btn"
+                class="ar-btn p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium flex items-center justify-center gap-2 transition cursor-pointer"
+                data-ar="9:16">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                </svg>
                 <span>9:16 Dọc (TikTok / Reels)</span>
               </button>
             </div>
           </div>
 
           <!-- 2. Gắn Hình Nền hoặc Chèn Video Nền -->
-          <div class="space-y-3 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
+          <div
+            class="space-y-3 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
             <div class="flex items-center justify-between">
               <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
                 2. Nền Video (Preset / Ảnh / Chèn Video nền):
               </label>
               <!-- Nút chuyển đổi chế độ nền -->
-              <div class="flex items-center gap-1 bg-slate-200/80 dark:bg-slate-800 p-0.5 rounded-lg text-[11px] font-semibold">
-                <button type="button" id="tabBgPresetBtn" class="px-2.5 py-1 rounded-md bg-white dark:bg-slate-700 shadow-sm text-indigo-600 dark:text-indigo-300 transition cursor-pointer">Preset / Ảnh</button>
-                <button type="button" id="tabBgVideoBtn" class="px-2.5 py-1 rounded-md text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition cursor-pointer">🎬 Chèn Video</button>
+              <div
+                class="flex items-center gap-1 bg-slate-200/80 dark:bg-slate-800 p-0.5 rounded-lg text-[11px] font-semibold">
+                <button type="button" id="tabBgPresetBtn"
+                  class="px-2.5 py-1 rounded-md bg-white dark:bg-slate-700 shadow-sm text-indigo-600 dark:text-indigo-300 transition cursor-pointer">Preset
+                  / Ảnh</button>
+                <button type="button" id="tabBgVideoBtn"
+                  class="px-2.5 py-1 rounded-md text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition cursor-pointer">🎬
+                  Chèn Video</button>
               </div>
             </div>
 
@@ -640,28 +732,49 @@
               <div class="flex items-center justify-between text-xs">
                 <span class="text-[11px] text-slate-500 dark:text-slate-400">Chọn mẫu phong cách:</span>
                 <input type="file" id="customBgFileInput" accept="image/*" class="hidden">
-                <button type="button" id="triggerBgUploadBtn" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 font-semibold cursor-pointer">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                <button type="button" id="triggerBgUploadBtn"
+                  class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 font-semibold cursor-pointer">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
+                    </path>
+                  </svg>
                   <span>📁 Tải ảnh từ máy tính</span>
                 </button>
               </div>
 
               <!-- 4 Preset Hình nền -->
               <div class="grid grid-cols-4 gap-2">
-                <button type="button" class="bg-preset-btn p-2 rounded-xl border border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/60 text-center transition cursor-pointer" data-bg="sunset">
-                  <div class="w-full h-9 rounded-lg bg-gradient-to-r from-purple-800 via-pink-600 to-amber-500 mb-1 shadow-sm"></div>
+                <button type="button"
+                  class="bg-preset-btn p-2 rounded-xl border border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/60 text-center transition cursor-pointer"
+                  data-bg="sunset">
+                  <div
+                    class="w-full h-9 rounded-lg bg-gradient-to-r from-purple-800 via-pink-600 to-amber-500 mb-1 shadow-sm">
+                  </div>
                   <span class="text-[10px] font-semibold text-slate-700 dark:text-slate-300">Hoàng hôn</span>
                 </button>
-                <button type="button" class="bg-preset-btn p-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-center transition cursor-pointer" data-bg="cyberpunk">
-                  <div class="w-full h-9 rounded-lg bg-gradient-to-r from-cyan-900 via-blue-900 to-fuchsia-900 mb-1 shadow-sm"></div>
+                <button type="button"
+                  class="bg-preset-btn p-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-center transition cursor-pointer"
+                  data-bg="cyberpunk">
+                  <div
+                    class="w-full h-9 rounded-lg bg-gradient-to-r from-cyan-900 via-blue-900 to-fuchsia-900 mb-1 shadow-sm">
+                  </div>
                   <span class="text-[10px] font-semibold text-slate-700 dark:text-slate-300">Cyberpunk</span>
                 </button>
-                <button type="button" class="bg-preset-btn p-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-center transition cursor-pointer" data-bg="lofi">
-                  <div class="w-full h-9 rounded-lg bg-gradient-to-r from-stone-900 via-stone-800 to-amber-900 mb-1 shadow-sm"></div>
+                <button type="button"
+                  class="bg-preset-btn p-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-center transition cursor-pointer"
+                  data-bg="lofi">
+                  <div
+                    class="w-full h-9 rounded-lg bg-gradient-to-r from-stone-900 via-stone-800 to-amber-900 mb-1 shadow-sm">
+                  </div>
                   <span class="text-[10px] font-semibold text-slate-700 dark:text-slate-300">Lo-Fi Studio</span>
                 </button>
-                <button type="button" class="bg-preset-btn p-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-center transition cursor-pointer" data-bg="gradient">
-                  <div class="w-full h-9 rounded-lg bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-950 mb-1 shadow-sm"></div>
+                <button type="button"
+                  class="bg-preset-btn p-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-center transition cursor-pointer"
+                  data-bg="gradient">
+                  <div
+                    class="w-full h-9 rounded-lg bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-950 mb-1 shadow-sm">
+                  </div>
                   <span class="text-[10px] font-semibold text-slate-700 dark:text-slate-300">Deep Glow</span>
                 </button>
               </div>
@@ -671,68 +784,94 @@
               </p>
             </div>
 
-            <!-- TAB 2: Chèn Video Nền (Local / TikTok / YouTube) -->
+            <!-- TAB 2: Chèn Video Nền (Local / Douyin / Facebook / TikTok / YouTube) -->
             <div id="bgVideoTabContent" class="space-y-2.5 hidden">
               <!-- Nút tải file video local -->
               <div class="flex items-center justify-between text-xs">
-                <span class="text-[11px] font-semibold text-slate-600 dark:text-slate-300">1. Tải video từ máy tính:</span>
-                <input type="file" id="customVideoFileInput" accept="video/mp4,video/webm,video/quicktime,video/*" class="hidden">
-                <button type="button" id="triggerVideoUploadBtn" class="px-2.5 py-1.5 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-semibold text-xs hover:bg-indigo-100 transition flex items-center gap-1.5 cursor-pointer">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                <span class="text-[11px] font-semibold text-slate-600 dark:text-slate-300">1. Tải video từ máy
+                  tính:</span>
+                <input type="file" id="customVideoFileInput" accept="video/mp4,video/webm,video/quicktime,video/*"
+                  class="hidden">
+                <button type="button" id="triggerVideoUploadBtn"
+                  class="px-2.5 py-1.5 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-semibold text-xs hover:bg-indigo-100 transition flex items-center gap-1.5 cursor-pointer">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z">
+                    </path>
+                  </svg>
                   <span>📁 Chọn tệp video (.mp4/.webm)</span>
                 </button>
               </div>
 
-              <!-- Dán Link Video TikTok / YouTube -->
-              <div class="space-y-1">
-                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300">2. Hoặc dán link TikTok / YouTube / MP4 trực tiếp:</label>
+              <!-- Dán Link Video Douyin / Facebook / TikTok / YouTube -->
+              <div class="space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300">2. Hoặc dán link
+                    Facebook / Douyin / TikTok / YouTube:</label>
+                  <div class="flex items-center gap-1 text-[10px] text-slate-400 font-medium">
+                    <span
+                      class="px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400 font-bold">FB</span>
+                    <span
+                      class="px-1.5 py-0.5 rounded bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 font-bold">Douyin</span>
+                    <span
+                      class="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold">TikTok</span>
+                    <span
+                      class="px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-950/80 text-red-600 dark:text-red-400 font-bold">YouTube</span>
+                  </div>
+                </div>
                 <div class="flex items-center gap-1.5">
                   <div class="relative flex-1">
-                    <input 
-                      type="url" 
-                      id="videoLinkInput" 
-                      placeholder="Dán link TikTok (vd: https://vt.tiktok.com/...) hoặc YouTube (vd: https://youtu.be/...)..." 
-                      class="glass-input w-full rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500 pl-7"
-                    >
+                    <input type="url" id="videoLinkInput"
+                      placeholder="Dán link Facebook, Douyin (抖音), TikTok hoặc YouTube..."
+                      class="glass-input w-full rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500 pl-7">
                     <span class="absolute left-2.5 top-2.5 text-slate-400 text-xs">🔗</span>
                   </div>
-                  <button 
-                    type="button" 
-                    id="loadVideoLinkBtn" 
-                    class="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95 shadow-sm"
-                  >
+                  <button type="button" id="loadVideoLinkBtn"
+                    class="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95 shadow-sm">
                     <span id="loadVideoLinkIcon">⚡</span>
                     <span id="loadVideoLinkText">Nạp video</span>
                   </button>
                 </div>
+                <p class="text-[10px] text-slate-400 dark:text-slate-500">
+                  Hỗ trợ: Facebook (Reels/Watch/Post), Douyin (抖音 v.douyin.com), TikTok (vt/vm), YouTube (Shorts/Video)
+                  & MP4 trực tiếp.
+                </p>
               </div>
 
               <!-- Trạng thái Video đang nạp -->
-              <div id="customVideoStatusBox" class="hidden p-2.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/70 border border-indigo-200 dark:border-indigo-800/60 text-xs flex items-center justify-between">
+              <div id="customVideoStatusBox"
+                class="hidden p-2.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/70 border border-indigo-200 dark:border-indigo-800/60 text-xs flex items-center justify-between">
                 <div class="flex items-center gap-2 truncate pr-2">
                   <span class="text-base">🎬</span>
                   <div class="truncate">
-                    <div id="customVideoTitle" class="font-bold text-slate-800 dark:text-slate-100 truncate">Video nền đã nạp</div>
-                    <div class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                    <div id="customVideoTitle" class="font-bold text-slate-800 dark:text-slate-100 truncate">Video nền
+                      đã nạp</div>
+                    <div
+                      class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
                       <span>✓ Đã tắt âm thanh gốc</span>
                       <span>•</span>
                       <span>Sẵn sàng lồng giọng đọc TTS & Nhạc nền</span>
                     </div>
                   </div>
                 </div>
-                <button type="button" id="removeBgVideoBtn" class="text-xs text-rose-500 hover:underline shrink-0 font-medium cursor-pointer">Xóa video</button>
+                <button type="button" id="removeBgVideoBtn"
+                  class="text-xs text-rose-500 hover:underline shrink-0 font-medium cursor-pointer">Xóa video</button>
               </div>
 
               <p class="text-[10px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
                 <span>🔇</span>
-                <span>Hệ thống tự động loại bỏ hoàn toàn âm thanh gốc của video để lồng tiếng đọc TTS và nhạc nền chất lượng cao.</span>
+                <span>Hệ thống tự động loại bỏ hoàn toàn âm thanh gốc của video để lồng tiếng đọc TTS và nhạc nền chất
+                  lượng cao.</span>
               </p>
             </div>
 
             <!-- Kiểu Khớp Hình Nền / Video (Object-Fit) -->
-            <div class="flex items-center justify-between pt-1 text-xs border-t border-slate-200/60 dark:border-slate-800/60 mt-1">
-              <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Kiểu khớp hình ảnh / video (Object-Fit):</span>
-              <select id="bgObjectFitSelect" class="glass-input rounded-xl px-2.5 py-1 text-xs focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+            <div
+              class="flex items-center justify-between pt-1 text-xs border-t border-slate-200/60 dark:border-slate-800/60 mt-1">
+              <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Kiểu khớp hình ảnh / video
+                (Object-Fit):</span>
+              <select id="bgObjectFitSelect"
+                class="glass-input rounded-xl px-2.5 py-1 text-xs focus:ring-2 focus:ring-indigo-500 cursor-pointer">
                 <option value="cover" selected>Phủ kín khung hình (Cover - Chuẩn tỉ lệ, không méo)</option>
                 <option value="contain">Vừa vặn (Contain - Không bị cắt mép)</option>
               </select>
@@ -743,15 +882,18 @@
           </div>
 
           <!-- 3. Lồng Nhạc Nền (Background Music) -->
-          <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-3">
+          <div
+            class="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-3">
             <div class="flex items-center justify-between">
               <label class="flex items-center gap-2 cursor-pointer select-none">
-                <input type="checkbox" id="enableBgmCheckbox" checked class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+                <input type="checkbox" id="enableBgmCheckbox" checked
+                  class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer">
                 <span class="font-bold text-slate-700 dark:text-slate-200 text-xs uppercase tracking-wider">
                   3. Lồng Nhạc Nền (BGM)
                 </span>
               </label>
-              <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/40">
+              <span
+                class="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/40">
                 Tự động hòa âm
               </span>
             </div>
@@ -759,13 +901,15 @@
             <!-- Tùy chọn nguồn nhạc -->
             <div id="bgmControlsContainer" class="space-y-3 pt-1">
               <div class="flex items-center gap-2">
-                <select id="bgmSelect" class="glass-input text-xs rounded-xl p-2.5 flex-1 focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+                <select id="bgmSelect"
+                  class="glass-input text-xs rounded-xl p-2.5 flex-1 focus:ring-2 focus:ring-indigo-500 cursor-pointer">
                   <option value="lofi" selected>🎵 Lo-Fi Chill & Relax (Giai điệu & Tiết tấu êm dịu)</option>
                   <option value="piano">🎹 Piano Cảm xúc & Nhẹ nhàng</option>
                   <option value="ambient">🌿 Thiền định & Tĩnh lặng (Ambient Shimmer)</option>
                   <option value="custom">📁 Tải tệp nhạc từ máy tính (.mp3, .wav)...</option>
                 </select>
-                <button type="button" id="previewBgmBtn" title="Bấm để nghe thử nhạc nền trước khi xuất video" class="px-3 py-2.5 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 font-semibold text-xs hover:bg-indigo-100 dark:hover:bg-indigo-900 transition flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95">
+                <button type="button" id="previewBgmBtn" title="Bấm để nghe thử nhạc nền trước khi xuất video"
+                  class="px-3 py-2.5 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 font-semibold text-xs hover:bg-indigo-100 dark:hover:bg-indigo-900 transition flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95">
                   <span id="previewBgmIcon">▶</span>
                   <span id="previewBgmText">Nghe thử</span>
                 </button>
@@ -779,7 +923,8 @@
                   <span id="bgmVolumeVal" class="text-indigo-600 dark:text-indigo-400 font-mono">22%</span>
                 </div>
                 <input type="range" id="bgmVolumeSlider" min="5" max="70" step="1" value="22" class="w-full">
-                <p class="text-[10px] text-slate-400">💡 Mức 20% - 25% giúp nhạc nền hòa âm rõ ràng, êm ái mà không lấn át giọng đọc TTS.</p>
+                <p class="text-[10px] text-slate-400">💡 Mức 20% - 25% giúp nhạc nền hòa âm rõ ràng, êm ái mà không lấn
+                  át giọng đọc TTS.</p>
               </div>
             </div>
           </div>
@@ -787,12 +932,16 @@
           <!-- 4. Tùy chọn hiển thị (Sóng âm, Phụ đề, Vị trí) -->
           <div class="space-y-3 pt-1">
             <div class="grid grid-cols-2 gap-3 text-xs">
-              <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 cursor-pointer">
-                <input type="checkbox" id="showWaveformCheckbox" checked class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+              <label
+                class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 cursor-pointer">
+                <input type="checkbox" id="showWaveformCheckbox" checked
+                  class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer">
                 <span class="font-medium text-slate-700 dark:text-slate-300">Bật sóng âm thanh</span>
               </label>
-              <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 cursor-pointer">
-                <input type="checkbox" id="showSubtitlesCheckbox" checked class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+              <label
+                class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 cursor-pointer">
+                <input type="checkbox" id="showSubtitlesCheckbox" checked
+                  class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer">
                 <span class="font-medium text-slate-700 dark:text-slate-300">Bật phụ đề văn bản</span>
               </label>
             </div>
@@ -800,16 +949,20 @@
             <!-- Kiểu sóng âm & Vị trí phụ đề -->
             <div class="grid grid-cols-2 gap-3 text-xs">
               <div>
-                <label class="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">Kiểu sóng âm:</label>
-                <select id="waveformStyleSelect" class="glass-input w-full rounded-xl p-2 text-xs focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+                <label class="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">Kiểu sóng
+                  âm:</label>
+                <select id="waveformStyleSelect"
+                  class="glass-input w-full rounded-xl p-2 text-xs focus:ring-2 focus:ring-indigo-500 cursor-pointer">
                   <option value="bars" selected>📊 Thanh Neon ngang (Bars)</option>
                   <option value="circle">🎙️ Vòng tròn Podcast (Circular)</option>
                   <option value="waterfall">🌊 Dải sóng Thác nước (Waterfall Wave)</option>
                 </select>
               </div>
               <div>
-                <label class="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">Vị trí phụ đề:</label>
-                <select id="subtitlePositionSelect" class="glass-input w-full rounded-xl p-2 text-xs focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+                <label class="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">Vị trí phụ
+                  đề:</label>
+                <select id="subtitlePositionSelect"
+                  class="glass-input w-full rounded-xl p-2 text-xs focus:ring-2 focus:ring-indigo-500 cursor-pointer">
                   <option value="top">Phía Trên (Top)</option>
                   <option value="center" selected>Ở Giữa (Center)</option>
                   <option value="bottom">Phía Dưới (Bottom - TikTok)</option>
@@ -819,10 +972,12 @@
           </div>
 
           <!-- 5. Tùy chọn Watermark / Tên thương hiệu hiển thị -->
-          <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-2">
+          <div
+            class="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-2">
             <div class="flex items-center justify-between">
               <label class="flex items-center gap-2 cursor-pointer select-none">
-                <input type="checkbox" id="showWatermarkCheckbox" checked class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+                <input type="checkbox" id="showWatermarkCheckbox" checked
+                  class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer">
                 <span class="font-bold text-slate-700 dark:text-slate-200 text-xs uppercase tracking-wider">
                   5. Watermark / Logo hiển thị
                 </span>
@@ -830,27 +985,25 @@
               <span class="text-[10px] text-indigo-500 font-medium">Tự do chỉnh sửa</span>
             </div>
             <div class="flex items-center gap-2">
-              <input 
-                type="text" 
-                id="watermarkTextInput" 
-                value="Huawnef" 
-                placeholder="Nhập tên Watermark hiển thị..." 
-                class="glass-input flex-1 rounded-xl px-3 py-2 text-xs font-semibold focus:ring-2 focus:ring-indigo-500"
-              >
+              <input type="text" id="watermarkTextInput" value="Huawnef" placeholder="Nhập tên Watermark hiển thị..."
+                class="glass-input flex-1 rounded-xl px-3 py-2 text-xs font-semibold focus:ring-2 focus:ring-indigo-500">
             </div>
           </div>
 
           <!-- 6. Định dạng xuất Video (MP4 / WebM) -->
-          <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-2">
+          <div
+            class="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-2">
             <div class="flex items-center justify-between">
               <span class="font-bold text-slate-700 dark:text-slate-200 text-xs uppercase tracking-wider">
                 6. Định dạng tệp Video xuất:
               </span>
-              <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/40">
+              <span
+                class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/40">
                 Khuyên dùng MP4
               </span>
             </div>
-            <select id="videoFormatSelect" class="glass-input w-full rounded-xl p-2.5 text-xs font-semibold focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+            <select id="videoFormatSelect"
+              class="glass-input w-full rounded-xl p-2.5 text-xs font-semibold focus:ring-2 focus:ring-indigo-500 cursor-pointer">
               <option value="mp4" selected>🎬 MP4 (.mp4 - Tương thích mọi mạng xã hội, điện thoại, máy tính)</option>
               <option value="webm">🌐 WebM (.webm - Định dạng nén Web)</option>
             </select>
@@ -858,11 +1011,15 @@
 
           <!-- NÚT BẮT ĐẦU XUẤT VIDEO LỚN -->
           <div class="pt-2">
-            <button 
-              id="startRenderVideoBtn" 
-              class="glow-button w-full py-3.5 rounded-xl text-sm sm:text-base font-bold text-white bg-gradient-to-r from-violet-600 via-purple-600 to-pink-600 hover:from-violet-500 hover:to-pink-500 shadow-xl shadow-purple-500/25 transition flex items-center justify-center gap-2 cursor-pointer active:scale-98"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <button id="startRenderVideoBtn"
+              class="glow-button w-full py-3.5 rounded-xl text-sm sm:text-base font-bold text-white bg-gradient-to-r from-violet-600 via-purple-600 to-pink-600 hover:from-violet-500 hover:to-pink-500 shadow-xl shadow-purple-500/25 transition flex items-center justify-center gap-2 cursor-pointer active:scale-98">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z">
+                </path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
               <span>🎬 BẮT ĐẦU XUẤT & TẢI VIDEO MP4 VỀ MÁY</span>
             </button>
             <p class="text-[11px] text-center text-slate-400 dark:text-slate-500 mt-2">
@@ -880,21 +1037,27 @@
     <section class="glass-card rounded-2xl p-5 sm:p-6 transition-all duration-300 space-y-4">
       <div class="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800/80 pb-3">
         <div class="flex items-center gap-2">
-          <div class="w-7 h-7 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+          <div
+            class="w-7 h-7 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
           </div>
           <h2 class="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100">
             Lịch Sử Âm Thanh Đã Tạo
           </h2>
-          <span id="historyCountBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+          <span id="historyCountBadge"
+            class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
             0
           </span>
         </div>
-        <button id="clearHistoryBtn" class="text-xs text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 transition flex items-center gap-1">
+        <button id="clearHistoryBtn"
+          class="text-xs text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 transition flex items-center gap-1">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+            </path>
           </svg>
           <span>Xóa lịch sử</span>
         </button>
@@ -917,15 +1080,20 @@
   </main>
 
   <!-- MODAL CẤU HÌNH API KEY (Tùy chọn cho người dùng nâng cao) -->
-  <div id="settingsModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 transition-all duration-300">
-    <div class="glass-card bg-white dark:bg-slate-900 w-full max-w-lg rounded-2xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-5 animate-in fade-in zoom-in-95 duration-200">
-      
+  <div id="settingsModal"
+    class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 transition-all duration-300">
+    <div
+      class="glass-card bg-white dark:bg-slate-900 w-full max-w-lg rounded-2xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-5 animate-in fade-in zoom-in-95 duration-200">
+
       <!-- Tiêu đề Modal -->
       <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
         <div class="flex items-center gap-2">
-          <div class="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+          <div
+            class="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
+              </path>
             </svg>
           </div>
           <h3 class="text-base font-bold text-slate-800 dark:text-slate-100">
@@ -941,23 +1109,20 @@
 
       <!-- Nội dung Modal -->
       <div class="space-y-4 text-xs sm:text-sm">
-        
+
         <!-- Hugging Face Token -->
         <div class="space-y-1.5">
           <div class="flex items-center justify-between">
             <label for="hfTokenInput" class="font-semibold text-slate-700 dark:text-slate-200">
               Hugging Face User Access Token (Miễn phí):
             </label>
-            <a href="https://huggingface.co/settings/tokens" target="_blank" class="text-xs text-indigo-500 hover:underline">
+            <a href="https://huggingface.co/settings/tokens" target="_blank"
+              class="text-xs text-indigo-500 hover:underline">
               Lấy token miễn phí ↗
             </a>
           </div>
-          <input 
-            type="password" 
-            id="hfTokenInput" 
-            placeholder="hf_xxxxxxxxxxxxxxxxxxxxxxxxx" 
-            class="w-full glass-input rounded-xl p-3 font-mono text-xs focus:ring-2 focus:ring-indigo-500"
-          >
+          <input type="password" id="hfTokenInput" placeholder="hf_xxxxxxxxxxxxxxxxxxxxxxxxx"
+            class="w-full glass-input rounded-xl p-3 font-mono text-xs focus:ring-2 focus:ring-indigo-500">
           <p class="text-[11px] text-slate-500 dark:text-slate-400">
             Giúp tăng hạn mức gọi API Inference cho các mô hình Meta MMS TTS và loại bỏ giới hạn tốc độ.
           </p>
@@ -973,35 +1138,33 @@
               Trang chủ ElevenLabs ↗
             </a>
           </div>
-          <input 
-            type="password" 
-            id="elevenKeyInput" 
-            placeholder="sk_xxxxxxxxxxxxxxxxxxxxxxxxx" 
-            class="w-full glass-input rounded-xl p-3 font-mono text-xs focus:ring-2 focus:ring-indigo-500"
-          >
+          <input type="password" id="elevenKeyInput" placeholder="sk_xxxxxxxxxxxxxxxxxxxxxxxxx"
+            class="w-full glass-input rounded-xl p-3 font-mono text-xs focus:ring-2 focus:ring-indigo-500">
           <p class="text-[11px] text-slate-500 dark:text-slate-400">
             Để sử dụng giọng đọc siêu chân thực Multilingual v2 của ElevenLabs nếu bạn có tài khoản.
           </p>
         </div>
 
-        <div class="p-3 rounded-xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-[11px] text-slate-500 dark:text-slate-400 space-y-1">
+        <div
+          class="p-3 rounded-xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-[11px] text-slate-500 dark:text-slate-400 space-y-1">
           <div class="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300">
             <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z">
+              </path>
             </svg>
             <span>Bảo mật dữ liệu:</span>
           </div>
-          <p>Tất cả Token và Khóa API được lưu cục bộ an toàn trong trình duyệt (LocalStorage) của riêng bạn và không bao giờ được gửi tới bất kỳ máy chủ trung gian nào.</p>
+          <p>Tất cả Token và Khóa API được lưu cục bộ an toàn trong trình duyệt (LocalStorage) của riêng bạn và không
+            bao giờ được gửi tới bất kỳ máy chủ trung gian nào.</p>
         </div>
 
       </div>
 
       <!-- Nút hành động Modal -->
       <div class="flex items-center justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-800">
-        <button 
-          id="saveSettingsBtn" 
-          class="px-5 py-2 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 transition shadow-md shadow-indigo-500/20"
-        >
+        <button id="saveSettingsBtn"
+          class="px-5 py-2 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 transition shadow-md shadow-indigo-500/20">
           Lưu cấu hình
         </button>
       </div>
@@ -1016,5 +1179,5 @@
   <script src="/js/tts-engine.js?v=2.10.0"></script>
   <script src="/js/app.js?v=2.10.0"></script>
 </body>
-</html>
 
+</html>

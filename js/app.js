@@ -842,7 +842,7 @@ document.addEventListener('DOMContentLoaded', () => {
   try {
     const saved = localStorage.getItem('vocalflow_history');
     if (saved) audioHistory = JSON.parse(saved);
-  } catch (e) {}
+  } catch (e) { }
 
   function renderHistory() {
     if (!historyListContainer) return;
@@ -927,7 +927,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (audioHistory.length > 20) audioHistory.pop();
     try {
       localStorage.setItem('vocalflow_history', JSON.stringify(audioHistory));
-    } catch (e) {}
+    } catch (e) { }
     renderHistory();
   }
 
@@ -945,7 +945,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 16. Đăng ký Service Worker cho PWA
   if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js').catch(() => {});
+      navigator.serviceWorker.register('./sw.js').catch(() => { });
     });
   }
 
@@ -1275,7 +1275,7 @@ document.addEventListener('DOMContentLoaded', () => {
       videoExporter.config.presetBg = bgName;
       videoExporter.config.customBgImage = null;
       if (videoExporter.config.customBgVideo) {
-        try { videoExporter.config.customBgVideo.pause(); } catch (e) {}
+        try { videoExporter.config.customBgVideo.pause(); } catch (e) { }
         videoExporter.config.customBgVideo = null;
       }
       if (customBgFileName) customBgFileName.classList.add('hidden');
@@ -1305,7 +1305,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const img = new Image();
         img.onload = () => {
           if (videoExporter.config.customBgVideo) {
-            try { videoExporter.config.customBgVideo.pause(); } catch (e) {}
+            try { videoExporter.config.customBgVideo.pause(); } catch (e) { }
             videoExporter.config.customBgVideo = null;
           }
           if (customVideoStatusBox) customVideoStatusBox.classList.add('hidden');
@@ -1342,7 +1342,7 @@ document.addEventListener('DOMContentLoaded', () => {
       bgVideoTabContent.classList.add('hidden');
 
       if (videoExporter.config.customBgVideo) {
-        try { videoExporter.config.customBgVideo.pause(); } catch (e) {}
+        try { videoExporter.config.customBgVideo.pause(); } catch (e) { }
       }
       videoExporter.config.bgType = videoExporter.config.customBgImage ? 'custom' : 'preset';
       updateVideoPreview();
@@ -1356,7 +1356,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (videoExporter.config.customBgVideo) {
         videoExporter.config.bgType = 'video';
-        videoExporter.config.customBgVideo.play().catch(() => {});
+        videoExporter.config.customBgVideo.play().catch(() => { });
         updateVideoPreview();
       }
     });
@@ -1390,7 +1390,7 @@ document.addEventListener('DOMContentLoaded', () => {
         b.classList.add('border-slate-200', 'dark:border-slate-700');
       });
 
-      bgVideoElement.play().catch(() => {});
+      bgVideoElement.play().catch(() => { });
       updateVideoPreview();
       showToast(`Đã nạp video nền: "${(title || '').slice(0, 30)}...". Âm thanh gốc đã được loại bỏ hoàn toàn!`, "success", 4500);
       bgVideoElement.removeEventListener('loadeddata', onReady);
@@ -1413,14 +1413,21 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 4. Giải mã và nạp Video từ Link TikTok / YouTube / MP4
+  // 4. Giải mã và nạp Video từ Link Facebook / Douyin / TikTok / YouTube / MP4
   if (loadVideoLinkBtn && videoLinkInput) {
     const handleLoadLink = async () => {
-      const link = videoLinkInput.value.trim();
-      if (!link) {
-        showToast("Vui lòng dán link video TikTok, YouTube hoặc link MP4!", "warning");
+      let rawText = videoLinkInput.value.trim();
+      if (!rawText) {
+        showToast("Vui lòng dán link video Facebook, Douyin, TikTok, YouTube hoặc MP4!", "warning");
         videoLinkInput.focus();
         return;
+      }
+
+      // Tự động nhận diện URL nếu người dùng dán toàn bộ đoạn văn bản chia sẻ
+      const urlMatch = rawText.match(/https?:\/\/[^\s]+/);
+      const link = urlMatch ? urlMatch[0] : rawText;
+      if (urlMatch && rawText !== link) {
+        videoLinkInput.value = link;
       }
 
       loadVideoLinkBtn.disabled = true;
@@ -1479,7 +1486,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (removeBgVideoBtn) {
     removeBgVideoBtn.addEventListener('click', () => {
       if (bgVideoElement) {
-        try { bgVideoElement.pause(); } catch (e) {}
+        try { bgVideoElement.pause(); } catch (e) { }
         bgVideoElement.removeAttribute('src');
         bgVideoElement.load();
       }
