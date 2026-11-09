@@ -367,17 +367,278 @@ class TTSEngine {
   }
 
   /**
+   * Đọc nhóm 3 chữ số tiếng Việt (trăm, mươi, đơn vị)
+   */
+  readThreeVietnameseDigits(n, hasHigher = false) {
+    const units = ['không', 'một', 'hai', 'ba', 'bốn', 'năm', 'sáu', 'bảy', 'tám', 'chín'];
+    const h = Math.floor(n / 100);
+    const t = Math.floor((n % 100) / 10);
+    const u = n % 10;
+    let res = [];
+
+    if (h > 0 || hasHigher) {
+      res.push(units[h] + ' trăm');
+    }
+
+    if (t > 1) {
+      res.push(units[t] + ' mươi');
+      if (u === 1) res.push('mốt');
+      else if (u === 4) res.push('tư');
+      else if (u === 5) res.push('lăm');
+      else if (u > 0) res.push(units[u]);
+    } else if (t === 1) {
+      res.push('mười');
+      if (u === 5) res.push('lăm');
+      else if (u > 0) res.push(units[u]);
+    } else if (t === 0 && (h > 0 || hasHigher) && u > 0) {
+      res.push('lẻ ' + (u === 4 ? 'tư' : units[u]));
+    } else if (t === 0 && h === 0 && !hasHigher) {
+      res.push(units[u]);
+    }
+
+    return res.join(' ');
+  }
+
+  /**
+   * Chuyển đổi chuỗi số thành chữ đọc Tiếng Việt tự nhiên
+   */
+  readVietnameseNumber(numStr) {
+    numStr = String(numStr).replace(/^0+(?=\d)/, '');
+    if (!numStr || numStr === '0') return 'không';
+    if (numStr.length > 15) {
+      const units = ['không', 'một', 'hai', 'ba', 'bốn', 'năm', 'sáu', 'bảy', 'tám', 'chín'];
+      return numStr.split('').map(d => units[d] || d).join(' ');
+    }
+
+    const scales = ['', 'nghìn', 'triệu', 'tỷ', 'nghìn tỷ'];
+    const groups = [];
+    let s = numStr;
+    while (s.length > 0) {
+      groups.unshift(parseInt(s.slice(-3), 10));
+      s = s.slice(0, -3);
+    }
+
+    let words = [];
+    const totalGroups = groups.length;
+    for (let i = 0; i < totalGroups; i++) {
+      const grp = groups[i];
+      const scaleIndex = totalGroups - 1 - i;
+      if (grp > 0 || (totalGroups === 1 && grp === 0)) {
+        const hasHigher = i > 0;
+        const grpText = this.readThreeVietnameseDigits(grp, hasHigher);
+        if (grpText) {
+          words.push(grpText);
+          if (scaleIndex > 0) words.push(scales[scaleIndex]);
+        }
+      }
+    }
+    return words.join(' ').replace(/\s+/g, ' ').trim();
+  }
+
+  /**
+   * Đọc số tiếng Anh cơ bản
+   */
+  readEnglishNumber(n) {
+    const units = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+    const tens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+    n = parseInt(n, 10);
+    if (isNaN(n)) return '';
+    if (n < 20) return units[n];
+    if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 !== 0 ? '-' + units[n % 10] : '');
+    if (n < 1000) return units[Math.floor(n / 100)] + ' hundred' + (n % 100 !== 0 ? ' and ' + this.readEnglishNumber(n % 100) : '');
+    if (n < 1000000) return this.readEnglishNumber(Math.floor(n / 1000)) + ' thousand' + (n % 1000 !== 0 ? ' ' + this.readEnglishNumber(n % 1000) : '');
+    return String(n);
+  }
+
+  /**
+   * Chuẩn hóa văn bản Tiếng Việt cho Piper AI WebAssembly:
+   * Chuyển đổi toàn bộ số (0-9, ngày tháng, giờ phút, tiền tệ, phần trăm, số âm, dải số...) thành chữ đọc tự nhiên,
+   * đồng thời lọc sạch các ký tự đặc biệt ngoài bảng từ vựng ONNX để tránh hoàn toàn lỗi out-of-bounds (idx=132...).
+   */
+  normalizeVietnameseTextForPiper(text) {
+    if (!text) return '';
+    let s = text;
+
+    // Chuẩn hóa dấu nháy và gạch ngang đặc biệt Unicode sang ASCII
+    s = s.replace(/[\u2018\u2019]/g, "'");
+    s = s.replace(/[\u201C\u201D]/g, '"');
+    s = s.replace(/[\u2013\u2014]/g, '-');
+
+    // Ký hiệu viết tắt quen thuộc
+    s = s.replace(/\b24\/7\b/giu, 'hai mươi tư trên bảy');
+    s = s.replace(/\b24\/24\b/giu, 'hai mươi tư trên hai mươi tư');
+
+    // Tiền tệ gắn liền sau số: 100k, 5tr, 100đ, 100.000vnd, 50$, 1000usd
+    s = s.replace(/(\d+)\s*(?:đ|đồng|vnd|vnđ)(?!\p{L})/giu, '$1 đồng');
+    s = s.replace(/(\d+)\s*(?:k|nghìn|ngàn)(?!\p{L})/giu, '$1 nghìn');
+    s = s.replace(/(\d+)\s*(?:tr|triệu)(?!\p{L})/giu, '$1 triệu');
+    s = s.replace(/(\d+)\s*(?:\$|usd|đô|đô la)(?!\p{L})/giu, '$1 đô la');
+
+    // Ký hiệu toán học & tiền tệ đứng lẻ
+    s = s.replace(/%/g, ' phần trăm ');
+    s = s.replace(/&/g, ' và ');
+    s = s.replace(/@/g, ' a còng ');
+    s = s.replace(/\+/g, ' cộng ');
+    s = s.replace(/=/g, ' bằng ');
+    s = s.replace(/°C/gi, ' độ C ');
+    s = s.replace(/°/g, ' độ ');
+    s = s.replace(/#/g, ' số ');
+    s = s.replace(/\$/g, ' đô la ');
+    s = s.replace(/€/g, ' ơ-rô ');
+    s = s.replace(/¥/g, ' yên ');
+    s = s.replace(/₫/g, ' đồng ');
+
+    // Đơn vị dung lượng công nghệ
+    s = s.replace(/(\d+)\s*TB(?!\p{L})/giu, '$1 tê-ra-bai');
+    s = s.replace(/(\d+)\s*GB(?!\p{L})/giu, '$1 ghi-ga-bai');
+    s = s.replace(/(\d+)\s*MB(?!\p{L})/giu, '$1 mê-ga-bai');
+    s = s.replace(/(\d+)\s*KB(?!\p{L})/giu, '$1 ki-lô-bai');
+
+    // Đơn vị đo lường
+    s = s.replace(/(\d+)\s*km\/h(?!\p{L})/giu, '$1 ki lô mét trên giờ');
+    s = s.replace(/(\d+)\s*km(?!\p{L})/giu, '$1 ki lô mét');
+    s = s.replace(/(\d+)\s*cm(?!\p{L})/giu, '$1 xen ti mét');
+    s = s.replace(/(\d+)\s*mm(?!\p{L})/giu, '$1 mi li mét');
+    s = s.replace(/(\d+)\s*kg(?!\p{L})/giu, '$1 ki lô gam');
+    s = s.replace(/(\d+)\s*g(?!\p{L})/giu, '$1 gam');
+    s = s.replace(/(\d+)\s*ml(?!\p{L})/giu, '$1 mi li lít');
+    s = s.replace(/(\d+)\s*l(?!\p{L})/giu, '$1 lít');
+    s = s.replace(/(\d+)\s*m(?!\p{L})/giu, '$1 mét');
+
+    // Ngày tháng theo chuẩn yyyy-mm-dd
+    s = s.replace(/(ngày\s+)?\b(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})\b/gu, (match, prefix, y, m, d) => {
+      const dWord = this.readVietnameseNumber(d);
+      const mWord = (m === '4' || m === '04') ? 'tư' : this.readVietnameseNumber(m);
+      const yWord = this.readVietnameseNumber(y);
+      return (prefix || 'ngày ') + dWord + ' tháng ' + mWord + ' năm ' + yWord;
+    });
+
+    // Ngày tháng theo chuẩn dd/mm/yyyy hoặc dd-mm-yyyy (bắt buộc có năm 4 chữ số)
+    s = s.replace(/(ngày\s+)?\b(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})\b/gu, (match, prefix, d, m, y) => {
+      const dWord = this.readVietnameseNumber(d);
+      const mWord = (m === '4' || m === '04') ? 'tư' : this.readVietnameseNumber(m);
+      const yWord = this.readVietnameseNumber(y);
+      return (prefix || 'ngày ') + dWord + ' tháng ' + mWord + ' năm ' + yWord;
+    });
+
+    // Ngày tháng theo chuẩn dd/mm (chỉ với dấu gạch chéo /, tránh nhầm dải số có dấu gạch ngang -)
+    s = s.replace(/(ngày\s+)?\b(\d{1,2})\/(\d{1,2})\b/gu, (match, prefix, d, m) => {
+      return (prefix || 'ngày ') + this.readVietnameseNumber(d) + ' tháng ' + this.readVietnameseNumber(m);
+    });
+
+    // Giờ phút: 10h30, 10:30, 10h
+    s = s.replace(/\b(\d{1,2})h(\d{1,2})\b/giu, (match, h, m) => {
+      return this.readVietnameseNumber(h) + ' giờ ' + this.readVietnameseNumber(m) + ' phút';
+    });
+    s = s.replace(/\b(\d{1,2}):(\d{2})\b/gu, (match, h, m) => {
+      return this.readVietnameseNumber(h) + ' giờ ' + this.readVietnameseNumber(m) + ' phút';
+    });
+    s = s.replace(/\b(\d{1,2})h(?!\p{L})/giu, (match, h) => {
+      return this.readVietnameseNumber(h) + ' giờ';
+    });
+
+    // Số điện thoại (bắt đầu bằng 0 và có 10-11 chữ số liên tiếp)
+    s = s.replace(/\b(0\d{9,10})\b/gu, (match) => {
+      const units = ['không', 'một', 'hai', 'ba', 'bốn', 'năm', 'sáu', 'bảy', 'tám', 'chín'];
+      return match.split('').map(d => units[d]).join(' ');
+    });
+
+    // Số âm: -130 -> âm 130
+    s = s.replace(/(^|[\s(,;])-\s*(\d+)/gu, '$1âm $2');
+
+    // Khoảng số (range): 2-3 -> 2 đến 3
+    s = s.replace(/(\d+)\s*-\s*(\d+)/gu, '$1 đến $2');
+
+    // Phân cách hàng nghìn (100.000.000 hoặc 100,000,000)
+    s = s.replace(/\b\d{1,3}(?:[.,]\d{3})+\b/gu, (match) => {
+      const raw = match.replace(/[.,]/g, '');
+      return this.readVietnameseNumber(raw);
+    });
+
+    // Số thập phân (3.5 hoặc 3,5 giữa 2 số)
+    s = s.replace(/(\d+)[.,](\d+)/gu, (match, intPart, decPart) => {
+      const units = ['không', 'một', 'hai', 'ba', 'bốn', 'năm', 'sáu', 'bảy', 'tám', 'chín'];
+      const decWords = decPart.length > 2 
+        ? decPart.split('').map(d => units[d]).join(' ') 
+        : this.readVietnameseNumber(decPart);
+      return this.readVietnameseNumber(intPart) + ' phẩy ' + decWords;
+    });
+
+    // Dấu gạch chéo còn lại (phân số hoặc tỷ lệ)
+    s = s.replace(/\//g, ' trên ');
+
+    // Số nguyên đứng độc lập
+    s = s.replace(/\b\d+\b/gu, (match) => {
+      return this.readVietnameseNumber(match);
+    });
+
+    // Ký tự số dính liền chữ (v2, h3, a1...)
+    s = s.replace(/\d/g, (d) => {
+      const units = [' không ', ' một ', ' hai ', ' ba ', ' bốn ', ' năm ', ' sáu ', ' bảy ', ' tám ', ' chín '];
+      return units[d] || d;
+    });
+
+    // Làm sạch các ký hiệu đặc biệt không thuộc bộ ký tự an toàn
+    // Giữ lại: chữ cái mọi ngôn ngữ (\p{L}), dấu thanh (\p{M}), khoảng trắng (\s), dấu câu cơ bản: . , ? ! : ; - ' " ( )
+    s = s.replace(/[^\p{L}\p{M}\s.,?!:;\-'"()]/gu, ' ');
+
+    // Chuẩn hóa khoảng trắng
+    s = s.replace(/\s+/g, ' ').trim();
+    return s;
+  }
+
+  /**
+   * Bộ điều phối chuẩn hóa văn bản trước khi nạp vào Piper ONNX session
+   */
+  normalizeTextForPiper(text, voiceId = '') {
+    if (!text) return '';
+    let clean = text.trim();
+
+    // Giọng tiếng Việt (vi_VN-...)
+    if (!voiceId || voiceId.startsWith('vi_') || voiceId.includes('vi-VN')) {
+      return this.normalizeVietnameseTextForPiper(clean);
+    }
+
+    // Giọng tiếng Anh (en_US-..., en_GB-...)
+    if (voiceId.startsWith('en_') || voiceId.includes('en-US') || voiceId.includes('en-GB')) {
+      clean = clean.replace(/[\u2018\u2019]/g, "'");
+      clean = clean.replace(/[\u201C\u201D]/g, '"');
+      clean = clean.replace(/[\u2013\u2014]/g, '-');
+      clean = clean.replace(/\b\d+\b/g, (m) => this.readEnglishNumber(m));
+      clean = clean.replace(/[^\p{L}\p{M}\s.,?!:;\-'"()]/gu, ' ');
+      clean = clean.replace(/\s+/g, ' ').trim();
+      return clean;
+    }
+
+    // Các ngôn ngữ khác: loại bỏ các ký hiệu đặc biệt dễ làm crash Gather layer
+    clean = clean.replace(/[\u2018\u2019]/g, "'");
+    clean = clean.replace(/[\u201C\u201D]/g, '"');
+    clean = clean.replace(/[\u2013\u2014]/g, '-');
+    clean = clean.replace(/[^\p{L}\p{M}\p{N}\s.,?!:;\-'"()]/gu, ' ');
+    clean = clean.replace(/\s+/g, ' ').trim();
+    return clean;
+  }
+
+  /**
    * NGUỒN PIPER: Piper TTS WebAssembly (Chạy Offline 100% trong trình duyệt qua ONNX Runtime Web)
    */
   async speakPiper(text, retryCount = 0) {
     this.setState('loading');
-    const cleanText = text.trim();
+    let cleanText = text.trim();
     if (!cleanText) {
       this.setState('idle');
       throw new Error("Vui lòng nhập văn bản cần đọc!");
     }
 
     const voiceId = this.getCleanPiperVoiceId(this.settings.selectedBrowserVoiceURI || 'vi_VN-vais1000-medium');
+
+    // Chuẩn hóa văn bản trước khi đưa vào mô hình Piper:
+    // Chuyển đổi toàn bộ số thành chữ tự nhiên và làm sạch ký tự lạ ngoài từ vựng ONNX
+    cleanText = this.normalizeTextForPiper(cleanText, voiceId);
+    if (!cleanText) {
+      this.setState('idle');
+      throw new Error("Vui lòng nhập văn bản hợp lệ cần đọc!");
+    }
 
     // Tự động kiểm tra và dọn dẹp file cache nếu bị hỏng
     await this.validateAndCleanPiperModel(voiceId);
@@ -458,6 +719,15 @@ class TTSEngine {
         console.warn(`[Piper TTS] Phát hiện file model ${voiceId} bị lỗi protobuf. Đang tự động dọn cache và tải lại lần 2...`);
         await this.cleanCorruptedPiperModel(voiceId);
         return this.speakPiper(text, 1);
+      }
+
+      // Xử lý thông báo trực quan nếu có lỗi Gather node / out-of-bounds
+      if (err.message && (err.message.includes('out of data bounds') || err.message.includes('Gather'))) {
+        this.setState('idle');
+        if (this.onPiperProgress) {
+          this.onPiperProgress({ status: 'error', error: err.message });
+        }
+        throw new Error(`Lỗi Piper AI: Văn bản chứa ký tự hoặc chữ số vượt ngoài từ vựng của mô hình (${voiceId}). Hệ thống đã tự động chuẩn hóa văn bản số sang chữ, vui lòng nhấn đọc lại.`);
       }
 
       this.setState('idle');
