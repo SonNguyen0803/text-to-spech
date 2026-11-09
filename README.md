@@ -131,6 +131,23 @@ Bạn có thể dễ dàng nhúng widget này vào bất kỳ website WordPress,
 
 ---
 
+## 🚀 Hướng Dẫn Triển Khai Lên Render.com
+
+Dự án đã có sẵn file cấu hình `render.yaml` chuẩn Blueprint:
+1. Kết nối repository GitHub này với tài khoản [Render.com](https://render.com).
+2. Tạo mới một **Web Service**, chọn Runtime **Node**.
+3. Build Command: `npm install` | Start Command: `npm start`.
+
+### Lưu Ý Về Video Nền Khi Chạy Trên Cloud (Render.com):
+- **Facebook, Douyin (抖音), TikTok & File MP4**: Hoạt động mượt mà 100% trên Render mà không cần bất kỳ cấu hình nào.
+- **Tải tệp video từ máy tính**: Bạn có thể bấm `📁 Chọn tệp video (.mp4/.webm)` để tải video trực tiếp từ máy tính lên làm video nền mà không phụ thuộc vào mạng.
+- **YouTube trên Cloud**: Do YouTube áp dụng cơ chế chặn dải IP trung tâm dữ liệu (Datacenter IP ban) đối với các máy chủ đám mây như Render/AWS, nếu gặp thông báo hạn chế IP từ YouTube:
+  - Vào Render Dashboard > Service > **Environment**.
+  - Thêm biến môi trường: `YOUTUBE_COOKIE` với giá trị là chuỗi cookie YouTube đã đăng nhập từ trình duyệt của bạn (chứa `SAPISID` hoặc `__Secure-3PAPISID`).
+  - Khi có cookie, máy chủ sẽ giải mã YouTube thành công 100% không bị chặn.
+
+---
+
 ## 📜 Giấy Phép & Bản Quyền
 Dự án được phát hành dưới giấy phép mã nguồn mở MIT License. Tự do tùy biến và tích hợp vào các dự án thương mại hoặc cá nhân.
 

@@ -374,63 +374,91 @@ async function resolveDouyinVideo(videoUrl) {
 }
 
 /**
- * Bóc tách và giải mã link YouTube (youtube.com, youtu.be, shorts)
- * Tối ưu chống chặn bot và tránh lỗi "Could not prepare player" trên Render / Cloud Server
+ * Lấy cookie YouTube từ biến môi trường hoặc file cookies.txt (nếu có)
+ */
+function getYouTubeCookie() {
+  const envCookie = (process.env.YOUTUBE_COOKIE || process.env.YT_COOKIE || '').trim();
+  if (envCookie) return envCookie;
+
+  try {
+    const cookiesFile = path.join(__dirname, 'cookies.txt');
+    if (fs.existsSync(cookiesFile)) {
+      return fs.readFileSync(cookiesFile, 'utf8').trim();
+    }
+  } catch (e) {}
+
+  return '';
+}
+
+/**
+ * Bóc tách và giải mã link YouTube (youtube.com, youtu.be, shorts, hoặc ID video)
+ * Tối ưu chống chặn bot và hỗ trợ đa client (Tv, VisionOS, WebEmbedded) & xác thực Cookie trên Cloud/Render.com
  */
 async function resolveYouTubeVideo(videoUrl) {
   if (!YtdlClass) {
     throw new Error("Mô-đun xử lý YouTube chưa sẵn sàng trên máy chủ.");
   }
 
-  // Tuyến 1: Sử dụng Client.VisionOS (hoàn toàn không cần chạy player decipher script base.js, tránh lỗi Could not prepare player trên Render/Cloud)
-  try {
-    const clientsToTry = (YtdlClient && YtdlClient.VisionOS) ? [YtdlClient.VisionOS] : ['visionos'];
-    const yt = new YtdlClass({ clients: clientsToTry });
-    const info = await yt.getInfo(videoUrl);
-    const videoFormats = (info.formats || []).filter(f => f.hasVideo && f.url);
-    if (videoFormats.length > 0) {
-      const mp4Formats = videoFormats.filter(f => f.container === 'mp4');
-      mp4Formats.sort((a, b) => (b.height || 0) - (a.height || 0));
-      const chosen = mp4Formats.find(f => (f.height || 0) <= 1080) || videoFormats[0];
-
-      return {
-        success: true,
-        type: 'youtube',
-        title: info.videoDetails.title || 'Video YouTube',
-        duration: parseInt(info.videoDetails.lengthSeconds, 10) || 0,
-        quality: chosen.qualityLabel || '720p',
-        originalUrl: chosen.url,
-        videoUrl: `/api/proxy-video?url=${encodeURIComponent(chosen.url)}`
-      };
-    }
-  } catch (visionErr) {
-    console.warn("Giải mã YouTube qua VisionOS thất bại, thử các client phụ:", visionErr.message);
+  // Chuẩn hóa nếu người dùng chỉ dán ID 11 ký tự hoặc link không có protocol
+  let normalizedUrl = videoUrl.trim();
+  if (/^[a-zA-Z0-9_-]{11}$/.test(normalizedUrl)) {
+    normalizedUrl = `https://www.youtube.com/watch?v=${normalizedUrl}`;
+  } else if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
+    normalizedUrl = `https://${normalizedUrl}`;
   }
 
-  // Tuyến 2: Thử lại với client mặc định của Ytdl
-  try {
-    const ytFallback = new YtdlClass();
-    const info = await ytFallback.getInfo(videoUrl);
-    const videoFormats = (info.formats || []).filter(f => f.hasVideo && f.url);
-    if (videoFormats.length > 0) {
-      videoFormats.sort((a, b) => (b.height || 0) - (a.height || 0));
-      const chosen = videoFormats.find(f => f.container === 'mp4' && (f.height || 0) <= 1080) || videoFormats[0];
+  const cookieStr = getYouTubeCookie();
+  const hasValidCookie = cookieStr && (cookieStr.includes('SAPISID') || cookieStr.includes('__Secure-3PAPISID') || cookieStr.includes('.youtube.com'));
 
-      return {
-        success: true,
-        type: 'youtube',
-        title: info.videoDetails.title || 'Video YouTube',
-        duration: parseInt(info.videoDetails.lengthSeconds, 10) || 0,
-        quality: chosen.qualityLabel || '720p',
-        originalUrl: chosen.url,
-        videoUrl: `/api/proxy-video?url=${encodeURIComponent(chosen.url)}`
-      };
+  // Thứ tự client thử nghiệm:
+  // 1. Tv (Samsung Smart TV / Tizen) - Tốc độ cực nhanh và ít bị YouTube hạn chế IP datacenter
+  // 2. VisionOS (Apple Vision Pro) - Không cần giải mã player script base.js
+  // 3. WebEmbedded - Client nhúng dự phòng
+  const clientCandidates = [
+    (YtdlClient && YtdlClient.Tv) ? YtdlClient.Tv : 'tv',
+    (YtdlClient && YtdlClient.VisionOS) ? YtdlClient.VisionOS : 'visionos',
+    (YtdlClient && YtdlClient.WebEmbedded) ? YtdlClient.WebEmbedded : 'web_embedded'
+  ];
+
+  const errors = [];
+
+  for (const clientName of clientCandidates) {
+    try {
+      const opts = { clients: [clientName] };
+      if (hasValidCookie) {
+        opts.cookie = cookieStr;
+      }
+      const yt = new YtdlClass(opts);
+      const info = await yt.getInfo(normalizedUrl);
+      const videoFormats = (info.formats || []).filter(f => f.hasVideo && f.url);
+      if (videoFormats.length > 0) {
+        const mp4Formats = videoFormats.filter(f => f.container === 'mp4');
+        mp4Formats.sort((a, b) => (b.height || 0) - (a.height || 0));
+        // Ưu tiên chọn độ phân giải chuẩn từ 480p đến 1080p
+        const chosen = mp4Formats.find(f => (f.height || 0) <= 1080 && (f.height || 0) >= 480) || mp4Formats[0] || videoFormats[0];
+
+        return {
+          success: true,
+          type: 'youtube',
+          title: (info.videoDetails && info.videoDetails.title) || 'Video YouTube',
+          duration: parseInt((info.videoDetails && info.videoDetails.lengthSeconds) || 0, 10),
+          quality: chosen.qualityLabel || `${chosen.height || 720}p`,
+          originalUrl: chosen.url,
+          videoUrl: `/api/proxy-video?url=${encodeURIComponent(chosen.url)}`
+        };
+      }
+    } catch (err) {
+      errors.push(`[${clientName}]: ${err.message}`);
+      console.warn(`Giải mã YouTube với client ${clientName} thất bại:`, err.message);
     }
-  } catch (defaultErr) {
-    console.warn("Giải mã YouTube qua client mặc định thất bại:", defaultErr.message);
   }
 
-  throw new Error("Không thể giải mã luồng video YouTube. Vui lòng kiểm tra lại đường dẫn video.");
+  // Khi toàn bộ client thất bại (thường do YouTube chặn dải IP Datacenter của Render mà không có Cookie)
+  const errorDetails = errors.join('; ');
+  throw new Error(
+    `Không thể giải mã YouTube trên máy chủ Cloud (${errorDetails}). YouTube đang chặn IP datacenter. ` +
+    `Khắc phục: Thêm biến môi trường YOUTUBE_COOKIE trên Render Dashboard, hoặc dùng video Facebook / Douyin / TikTok / tải trực tiếp video từ máy tính lên!`
+  );
 }
 
   // 2. ENDPOINT PHÂN TÍCH & GIẢI MÃ LINK VIDEO: /api/resolve-video (Facebook, Douyin, TikTok, YouTube, Direct MP4)
@@ -522,8 +550,8 @@ async function resolveYouTubeVideo(videoUrl) {
         throw new Error("Không thể phân tích video TikTok. Hãy kiểm tra lại đường dẫn chia sẻ!");
       }
 
-      // D. Phân tích Link YouTube (youtube.com, youtu.be, shorts)
-      if (lowerUrl.includes('youtube.com') || lowerUrl.includes('youtu.be')) {
+      // D. Phân tích Link YouTube (youtube.com, youtu.be, shorts, hoặc ID video)
+      if (lowerUrl.includes('youtube.com') || lowerUrl.includes('youtu.be') || /^[a-zA-Z0-9_-]{11}$/.test(videoUrl.trim())) {
         const ytData = await resolveYouTubeVideo(videoUrl);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify(ytData));
