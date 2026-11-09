@@ -40,10 +40,15 @@
 
 ### 4. 🎬 Xưởng Xuất Video Tự Động (Video Export Studio) - MỚI!
 - **Kết xuất Video chuẩn MP4 / WebM**:
-  - Hỗ trợ 2 tỉ lệ khung hình: **16:9 Ngang** (YouTube, Facebook, Web) và **9:16 Dọc** (TikTok, Instagram Reels, YouTube Shorts).
-- **Chèn Hình nền Linh hoạt**:
+  - Hỗ trợ 2 tỉ lệ khung hình: **16:9 Ngang** (YouTube, Facebook, Web) và **9:16 Dọc** (TikTok, Douyin, Instagram Reels, YouTube Shorts).
+- **Chèn Hình nền & Video Nền Đa Nền Tảng Linh Hoạt**:
+  - **Chèn Video nền từ mạng xã hội**: Tự động bóc tách và giải mã video nền chất lượng cao từ **Facebook** (Reels, Watch, Post), **Douyin (抖音)**, **TikTok** và **YouTube** (Shorts / Video) hoặc link MP4/WebM trực tiếp.
+  - Tự động nhận diện và trích xuất URL ngay cả khi người dùng dán toàn bộ văn bản chia sẻ từ ứng dụng điện thoại.
+  - Cơ chế **Proxy Stream tự động** vượt qua kiểm duyệt CORS và chống chặn Referer từ máy chủ CDN.
+  - Tự động loại bỏ hoàn toàn âm thanh gốc của video nền để chuẩn bị lồng giọng đọc TTS và nhạc nền chất lượng cao.
+  - Cho phép người dùng **tải tệp video nền từ máy tính** (`.mp4`, `.webm`, `.mov`).
   - 4 Preset đồ họa cao cấp: Hoàng hôn tím cam (Sunset), Đêm Cyberpunk neon, Căn phòng Lo-Fi studio, Gradient sâu lắng.
-  - Cho phép người dùng **tải hình nền tùy chỉnh từ máy tính** (`.jpg`, `.png`, `.webp`) với hiệu ứng phóng to mượt mà (Ken Burns effect).
+  - Tùy chọn tải ảnh nền tùy chỉnh từ máy tính (`.jpg`, `.png`, `.webp`) với hiệu ứng phóng to mượt mà (Ken Burns effect).
 - **Lồng Nhạc Nền (Background Music - BGM)**:
   - Tự động tổng hợp nhạc nền phong cách **Lo-Fi Chill**, **Piano Cảm xúc**, **Thiền định (Ambient)** bằng Web Audio API ngay trong trình duyệt.
   - Hỗ trợ người dùng **tải file nhạc riêng từ máy tính** (`.mp3`, `.wav`).

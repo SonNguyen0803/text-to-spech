@@ -7,6 +7,21 @@
  * 4. ElevenLabs API (Tùy chọn nâng cao với API Key của người dùng)
  */
 
+/**
+ * Xác định Base URL cho API theo môi trường triển khai (Render, Vercel, VPS hoặc Localhost)
+ */
+function getApiBaseUrl() {
+  if (typeof window === 'undefined') return '';
+  // Nếu mở trực tiếp bằng tệp file:// (chưa chạy qua Web Server)
+  if (window.location.protocol === 'file:') return 'http://localhost:3000';
+  // Nếu đang dev localhost ở cổng khác (ví dụ Live Server 5500, Vite 5173...)
+  if ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port && window.location.port !== '3000') {
+    return `http://${window.location.hostname}:3000`;
+  }
+  // Môi trường Production (Render, Vercel, Cloud...) hoặc chạy cùng port: dùng relative path ""
+  return '';
+}
+
 class TTSEngine {
   constructor() {
     this.currentSource = 'browser'; // 'browser' | 'google' | 'huggingface' | 'elevenlabs'
@@ -280,12 +295,12 @@ class TTSEngine {
       const lang = this.settings.selectedGoogleLang || 'vi';
 
       // Thử dùng API proxy /api/tts để lấy luồng âm thanh hoàn chỉnh và hỗ trợ visualizer + download
-      const base = window.location.port === '3000' ? '' : 'http://localhost:3000';
+      const base = getApiBaseUrl();
       let proxyUrl = `${base}/api/tts?text=${encodeURIComponent(text)}&lang=${lang}`;
 
       try {
         let response = await fetch(proxyUrl);
-        if (!response.ok && response.status === 404 && base !== 'http://localhost:3000') {
+        if (!response.ok && response.status === 404 && base === '' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
           proxyUrl = `http://localhost:3000/api/tts?text=${encodeURIComponent(text)}&lang=${lang}`;
           response = await fetch(proxyUrl);
         }
@@ -354,10 +369,10 @@ class TTSEngine {
    */
   async prepareGoogleAudioBlob(text, lang) {
     try {
-      const base = window.location.port === '3000' ? '' : 'http://localhost:3000';
+      const base = getApiBaseUrl();
       let proxyUrl = `${base}/api/tts?text=${encodeURIComponent(text)}&lang=${lang}`;
       let res = await fetch(proxyUrl);
-      if (!res.ok && res.status === 404 && base !== 'http://localhost:3000') {
+      if (!res.ok && res.status === 404 && base === '' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
         proxyUrl = `http://localhost:3000/api/tts?text=${encodeURIComponent(text)}&lang=${lang}`;
         res = await fetch(proxyUrl);
       }

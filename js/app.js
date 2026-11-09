@@ -9,6 +9,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const engine = new TTSEngine();
   const visualizer = new AudioVisualizer('waveformCanvas');
 
+  // Xác định Base URL API thích ứng thông minh (Render.com, Vercel, Cloud VPS hoặc Localhost)
+  const getApiBaseUrl = () => {
+    if (typeof window === 'undefined') return '';
+    // Mở file trực tiếp từ máy tính chưa qua web server
+    if (window.location.protocol === 'file:') return 'http://localhost:3000';
+    // Đang dev localhost ở cổng khác (ví dụ Live Server 5500, Vite 5173...)
+    if ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port && window.location.port !== '3000') {
+      return `http://${window.location.hostname}:3000`;
+    }
+    // Môi trường Production (Render.com, Vercel, VPS...) hoặc cùng cổng: dùng relative path ""
+    return '';
+  };
+
   // 2. Tham chiếu các phần tử DOM
   const textInput = document.getElementById('textInput');
   const charCountEl = document.getElementById('charCount');
@@ -444,7 +457,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Lấy mã nhúng Widget (Embed)
   if (embedBtn) {
     embedBtn.addEventListener('click', async () => {
-      const embedCode = `<iframe src="${window.location.origin || 'http://localhost:3000'}" width="100%" height="780" frameborder="0" style="border-radius:16px; border:none; box-shadow:0 10px 30px rgba(0,0,0,0.15);" allow="microphone; clipboard-read; clipboard-write"></iframe>`;
+      const origin = (window.location.origin && window.location.origin !== 'null' && !window.location.origin.startsWith('file')) ? window.location.origin : 'http://localhost:3000';
+      const embedCode = `<iframe src="${origin}" width="100%" height="780" frameborder="0" style="border-radius:16px; border:none; box-shadow:0 10px 30px rgba(0,0,0,0.15);" allow="microphone; clipboard-read; clipboard-write"></iframe>`;
       try {
         await navigator.clipboard.writeText(embedCode);
         showToast("Đã sao chép thẻ <iframe> mã nhúng vào bộ nhớ tạm!", "success");
@@ -706,18 +720,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      let baseHost = window.location.port === '3000' ? '' : 'http://localhost:3000';
+      const baseHost = getApiBaseUrl();
       let endpoint = `${baseHost}/api/tts?text=${encodeURIComponent(text)}&lang=${lang}`;
 
       let res;
       try {
         res = await fetch(endpoint);
-        if (!res.ok && res.status === 404 && baseHost !== 'http://localhost:3000') {
+        if (!res.ok && res.status === 404 && baseHost === '' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
           endpoint = `http://localhost:3000/api/tts?text=${encodeURIComponent(text)}&lang=${lang}`;
           res = await fetch(endpoint);
         }
       } catch (netErr) {
-        if (baseHost !== 'http://localhost:3000') {
+        if (baseHost === '' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
           endpoint = `http://localhost:3000/api/tts?text=${encodeURIComponent(text)}&lang=${lang}`;
           res = await fetch(endpoint);
         } else {
@@ -1436,18 +1450,18 @@ document.addEventListener('DOMContentLoaded', () => {
       showToast("Đang kết nối máy chủ để bóc tách luồng video...", "info", 3000);
 
       try {
-        let baseHost = window.location.port === '3000' ? '' : 'http://localhost:3000';
+        const baseHost = getApiBaseUrl();
         let endpoint = `${baseHost}/api/resolve-video?url=${encodeURIComponent(link)}`;
 
         let res;
         try {
           res = await fetch(endpoint);
-          if (!res.ok && res.status === 404 && baseHost !== 'http://localhost:3000') {
+          if (!res.ok && res.status === 404 && baseHost === '' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
             endpoint = `http://localhost:3000/api/resolve-video?url=${encodeURIComponent(link)}`;
             res = await fetch(endpoint);
           }
         } catch (netErr) {
-          if (baseHost !== 'http://localhost:3000') {
+          if (baseHost === '' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
             endpoint = `http://localhost:3000/api/resolve-video?url=${encodeURIComponent(link)}`;
             res = await fetch(endpoint);
           } else {
@@ -1460,7 +1474,8 @@ document.addEventListener('DOMContentLoaded', () => {
           throw new Error(data.error || "Không thể phân tích video từ đường link này. Hãy kiểm tra lại link.");
         }
 
-        const finalStreamUrl = data.videoUrl.startsWith('http') ? data.videoUrl : `${baseHost}${data.videoUrl}`;
+        const hostPrefix = baseHost || (window.location.origin && window.location.origin !== 'null' && !window.location.origin.startsWith('file') ? window.location.origin : '');
+        const finalStreamUrl = data.videoUrl.startsWith('http') ? data.videoUrl : `${hostPrefix}${data.videoUrl}`;
         setupBackgroundVideo(finalStreamUrl, data.title || link);
 
       } catch (err) {

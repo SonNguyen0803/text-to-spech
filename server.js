@@ -617,10 +617,10 @@ async function resolveDouyinVideo(videoUrl) {
   });
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`\n======================================================`);
-  console.log(`🚀 VocalFlow AI TTS đang chạy tại: http://localhost:${PORT}`);
-  console.log(`🎧 API Tải Audio: http://localhost:${PORT}/api/tts?text=Xin+chao&lang=vi`);
+  console.log(`🚀 VocalFlow AI TTS đang chạy tại cổng: ${PORT}`);
+  console.log(`🎧 API Tải Audio: /api/tts?text=Xin+chao&lang=vi`);
   console.log(`📂 Thư mục: ${PUBLIC_DIR}`);
   console.log(`======================================================\n`);
 });
