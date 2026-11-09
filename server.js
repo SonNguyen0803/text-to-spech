@@ -391,74 +391,144 @@ function getYouTubeCookie() {
 }
 
 /**
+ * Bóc tách video YouTube qua Invidious Open Relay Network
+ * Giúp bypass 100% chặn IP datacenter trên Render.com mà KHÔNG CẦN Cookie
+ */
+async function resolveYouTubeViaInvidious(videoId) {
+  const instances = [
+    'https://yt.chocolatemoo53.com',
+    'https://inv.nadeko.net',
+    'https://invidious.nerdvpn.de',
+    'https://invidious.tiekoetter.com',
+    'https://invidious.schenkl.is'
+  ];
+
+  // Thử động lấy thêm instance từ danh sách chính thức nếu có thể
+  try {
+    const listRes = await fetch('https://api.invidious.io/instances.json?sort_by=health', { signal: AbortSignal.timeout(3000) });
+    if (listRes.ok) {
+      const list = await listRes.json();
+      const dyn = list.filter(i => i[1] && i[1].type === 'https' && i[1].api === true).map(i => i[1].uri);
+      for (const d of dyn) {
+        if (!instances.includes(d)) instances.push(d);
+      }
+    }
+  } catch (e) {}
+
+  for (const uri of instances) {
+    try {
+      const res = await fetch(`${uri}/api/v1/videos/${videoId}`, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+        signal: AbortSignal.timeout(6000)
+      });
+      if (!res.ok) continue;
+
+      const data = await res.json();
+      const allFormats = (data.adaptiveFormats || []).concat(data.formatStreams || []).filter(f => f.type?.includes('mp4') && f.url);
+      if (allFormats.length === 0) continue;
+
+      // Ưu tiên H.264 (avc1) từ 480p đến 1080p
+      const avcFormats = allFormats.filter(f => (f.type || '').includes('avc1') || !(f.type || '').includes('av01'));
+      avcFormats.sort((a, b) => (parseInt(b.resolution || b.qualityLabel, 10) || 0) - (parseInt(a.resolution || a.qualityLabel, 10) || 0));
+
+      const chosen = avcFormats.find(f => {
+        const res = parseInt(f.resolution || f.qualityLabel, 10) || 0;
+        return res <= 1080 && res >= 480;
+      }) || avcFormats[0] || allFormats[0];
+
+      return {
+        success: true,
+        type: 'youtube',
+        videoId: videoId,
+        title: data.title || 'Video YouTube',
+        duration: parseInt(data.lengthSeconds, 10) || 0,
+        quality: chosen.qualityLabel || chosen.resolution || '720p',
+        originalUrl: chosen.url,
+        videoUrl: `/api/proxy-video?url=${encodeURIComponent(chosen.url)}`
+      };
+    } catch (err) {
+      console.warn(`Thử bóc tách qua Invidious relay [${uri}] thất bại:`, err.message);
+    }
+  }
+
+  throw new Error("Không thể kết nối tới các cổng giải mã relay YouTube mở.");
+}
+
+/**
  * Bóc tách và giải mã link YouTube (youtube.com, youtu.be, shorts, hoặc ID video)
  * Tối ưu chống chặn bot và hỗ trợ đa client (Tv, VisionOS, WebEmbedded) & xác thực Cookie trên Cloud/Render.com
  */
 async function resolveYouTubeVideo(videoUrl) {
-  if (!YtdlClass) {
-    throw new Error("Mô-đun xử lý YouTube chưa sẵn sàng trên máy chủ.");
-  }
-
   // Chuẩn hóa nếu người dùng chỉ dán ID 11 ký tự hoặc link không có protocol
   let normalizedUrl = videoUrl.trim();
+  let ytId = '';
   if (/^[a-zA-Z0-9_-]{11}$/.test(normalizedUrl)) {
+    ytId = normalizedUrl;
     normalizedUrl = `https://www.youtube.com/watch?v=${normalizedUrl}`;
-  } else if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
-    normalizedUrl = `https://${normalizedUrl}`;
+  } else {
+    const idMatch = normalizedUrl.match(/(?:youtu\.be\/|v=|\/embed\/|\/shorts\/)([a-zA-Z0-9_-]{11})/);
+    if (idMatch) ytId = idMatch[1];
+    if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
+      normalizedUrl = `https://${normalizedUrl}`;
+    }
   }
 
   const cookieStr = getYouTubeCookie();
   const hasValidCookie = cookieStr && (cookieStr.includes('SAPISID') || cookieStr.includes('__Secure-3PAPISID') || cookieStr.includes('.youtube.com'));
 
-  // Thứ tự client thử nghiệm:
-  // 1. Tv (Samsung Smart TV / Tizen) - Tốc độ cực nhanh và ít bị YouTube hạn chế IP datacenter
-  // 2. VisionOS (Apple Vision Pro) - Không cần giải mã player script base.js
-  // 3. WebEmbedded - Client nhúng dự phòng
-  const clientCandidates = [
-    (YtdlClient && YtdlClient.Tv) ? YtdlClient.Tv : 'tv',
-    (YtdlClient && YtdlClient.VisionOS) ? YtdlClient.VisionOS : 'visionos',
-    (YtdlClient && YtdlClient.WebEmbedded) ? YtdlClient.WebEmbedded : 'web_embedded'
-  ];
+  // Tuyến 1: Thử các client Ytdl nội bộ
+  if (YtdlClass) {
+    const clientCandidates = [
+      (YtdlClient && YtdlClient.Tv) ? YtdlClient.Tv : 'tv',
+      (YtdlClient && YtdlClient.VisionOS) ? YtdlClient.VisionOS : 'visionos',
+      (YtdlClient && YtdlClient.WebEmbedded) ? YtdlClient.WebEmbedded : 'web_embedded'
+    ];
 
-  const errors = [];
+    for (const clientName of clientCandidates) {
+      try {
+        const opts = { clients: [clientName] };
+        if (hasValidCookie) opts.cookie = cookieStr;
+        const yt = new YtdlClass(opts);
+        const info = await yt.getInfo(normalizedUrl);
+        const videoFormats = (info.formats || []).filter(f => f.hasVideo && f.url);
+        if (videoFormats.length > 0) {
+          const mp4Formats = videoFormats.filter(f => f.container === 'mp4');
+          mp4Formats.sort((a, b) => (b.height || 0) - (a.height || 0));
+          const chosen = mp4Formats.find(f => (f.height || 0) <= 1080 && (f.height || 0) >= 480) || mp4Formats[0] || videoFormats[0];
 
-  for (const clientName of clientCandidates) {
-    try {
-      const opts = { clients: [clientName] };
-      if (hasValidCookie) {
-        opts.cookie = cookieStr;
+          const resolvedId = (info.videoDetails && info.videoDetails.id) || ytId;
+          return {
+            success: true,
+            type: 'youtube',
+            videoId: resolvedId,
+            title: (info.videoDetails && info.videoDetails.title) || 'Video YouTube',
+            duration: parseInt((info.videoDetails && info.videoDetails.lengthSeconds) || 0, 10),
+            quality: chosen.qualityLabel || `${chosen.height || 720}p`,
+            originalUrl: chosen.url,
+            videoUrl: `/api/proxy-video?yt=${encodeURIComponent(resolvedId)}`
+          };
+        }
+      } catch (err) {
+        console.warn(`Giải mã YouTube với client nội bộ ${clientName} thất bại:`, err.message);
       }
-      const yt = new YtdlClass(opts);
-      const info = await yt.getInfo(normalizedUrl);
-      const videoFormats = (info.formats || []).filter(f => f.hasVideo && f.url);
-      if (videoFormats.length > 0) {
-        const mp4Formats = videoFormats.filter(f => f.container === 'mp4');
-        mp4Formats.sort((a, b) => (b.height || 0) - (a.height || 0));
-        // Ưu tiên chọn độ phân giải chuẩn từ 480p đến 1080p
-        const chosen = mp4Formats.find(f => (f.height || 0) <= 1080 && (f.height || 0) >= 480) || mp4Formats[0] || videoFormats[0];
-
-        const ytId = (info.videoDetails && info.videoDetails.id) || (normalizedUrl.match(/[a-zA-Z0-9_-]{11}/) ? normalizedUrl.match(/[a-zA-Z0-9_-]{11}/)[0] : '');
-        return {
-          success: true,
-          type: 'youtube',
-          videoId: ytId,
-          title: (info.videoDetails && info.videoDetails.title) || 'Video YouTube',
-          duration: parseInt((info.videoDetails && info.videoDetails.lengthSeconds) || 0, 10),
-          quality: chosen.qualityLabel || `${chosen.height || 720}p`,
-          originalUrl: chosen.url,
-          videoUrl: `/api/proxy-video?yt=${encodeURIComponent(ytId)}`
-        };
-      }
-    } catch (err) {
-      errors.push(`[${clientName}]: ${err.message}`);
-      console.warn(`Giải mã YouTube với client ${clientName} thất bại:`, err.message);
     }
   }
 
-  // Khi toàn bộ client thất bại (thường do YouTube chặn dải IP Datacenter của Render mà không có Cookie)
-  const errorDetails = errors.join('; ');
+  // Tuyến 2 (TỰ ĐỘNG BYPASS TRÊN CLOUD / RENDER.COM KHÔNG CẦN COOKIE):
+  // Dùng mạng lưới relay Invidious độc lập để bóc tách luồng trực tiếp
+  if (ytId) {
+    console.log(`Đang kích hoạt cơ chế bypass đám mây cho video YouTube #${ytId}...`);
+    try {
+      const relayData = await resolveYouTubeViaInvidious(ytId);
+      return relayData;
+    } catch (relayErr) {
+      console.warn("Bypass qua relay Invidious thất bại:", relayErr.message);
+    }
+  }
+
+  // Khi toàn bộ client và relay đều thất bại
   throw new Error(
-    `Không thể giải mã YouTube trên máy chủ Cloud (${errorDetails}). YouTube đang chặn IP datacenter. ` +
+    `Không thể giải mã YouTube trên máy chủ Cloud do YouTube chặn IP datacenter. ` +
     `Khắc phục: Thêm biến môi trường YOUTUBE_COOKIE trên Render Dashboard, hoặc dùng video Facebook / Douyin / TikTok / tải trực tiếp video từ máy tính lên!`
   );
 }
@@ -690,7 +760,7 @@ async function getCachedYouTubeFormat(ytId) {
       }
     }
 
-    // 3B. Trường hợp video Facebook, Douyin, TikTok hoặc MP4 trực tiếp: Proxy qua HTTP/HTTPS client
+    // 3B. Trường hợp video Facebook, Douyin, TikTok, YouTube Stream URL hoặc MP4 trực tiếp: Proxy qua fetch với tự động theo dõi chuyển hướng (follow redirects)
     const rawTarget = parsedUrl.query.url;
     if (!rawTarget) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -699,12 +769,9 @@ async function getCachedYouTubeFormat(ytId) {
 
     try {
       const targetUrl = decodeURIComponent(rawTarget);
-      const parsedTarget = new URL(targetUrl);
       const lowerTarget = targetUrl.toLowerCase();
-      let referer = targetUrl;
-      if (lowerTarget.includes('googlevideo') || lowerTarget.includes('youtube')) {
-        referer = 'https://www.youtube.com/';
-      } else if (lowerTarget.includes('tiktok') || lowerTarget.includes('byteoversea')) {
+      let referer = '';
+      if (lowerTarget.includes('tiktok') || lowerTarget.includes('byteoversea')) {
         referer = 'https://www.tiktok.com/';
       } else if (lowerTarget.includes('douyin') || lowerTarget.includes('snssdk') || lowerTarget.includes('douyinvod')) {
         referer = 'https://www.douyin.com/';
@@ -713,54 +780,54 @@ async function getCachedYouTubeFormat(ytId) {
       }
 
       const clientHeaders = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-        'Referer': referer
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+      };
+      if (referer) clientHeaders['Referer'] = referer;
+      if (req.headers.range) clientHeaders['Range'] = req.headers.range;
+
+      // Sử dụng native fetch với redirect: 'follow' để xử lý mượt mà chuyển hướng 302 của Google Video CDN
+      const upstreamRes = await fetch(targetUrl, {
+        method: req.method,
+        headers: clientHeaders,
+        redirect: 'follow'
+      });
+
+      const outHeaders = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+        'Access-Control-Allow-Headers': 'Range, Content-Type, Accept',
+        'Content-Type': upstreamRes.headers.get('content-type') || 'video/mp4',
+        'Accept-Ranges': 'bytes',
+        'Cache-Control': 'public, max-age=3600'
       };
 
-      if (req.headers.range) {
-        clientHeaders['Range'] = req.headers.range;
+      if (upstreamRes.headers.get('content-range')) outHeaders['Content-Range'] = upstreamRes.headers.get('content-range');
+      if (upstreamRes.headers.get('content-length')) outHeaders['Content-Length'] = upstreamRes.headers.get('content-length');
+
+      res.writeHead(upstreamRes.status, outHeaders);
+
+      if (req.method === 'HEAD') {
+        return res.end();
       }
 
-      const transport = parsedTarget.protocol === 'http:' ? http : https;
-      const proxyReq = transport.get(targetUrl, { headers: clientHeaders }, (proxyRes) => {
-        // Xử lý chuyển hướng 301, 302
-        if (proxyRes.statusCode >= 300 && proxyRes.statusCode < 400 && proxyRes.headers.location) {
-          const redirectUrl = proxyRes.headers.location;
-          res.writeHead(302, { 'Location': `/api/proxy-video?url=${encodeURIComponent(redirectUrl)}` });
-          return res.end();
-        }
-
-        const outHeaders = {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
-          'Access-Control-Allow-Headers': 'Range, Content-Type',
-          'Content-Type': proxyRes.headers['content-type'] || 'video/mp4',
-          'Accept-Ranges': 'bytes',
-          'Cache-Control': 'public, max-age=3600'
-        };
-
-        if (proxyRes.headers['content-length']) outHeaders['Content-Length'] = proxyRes.headers['content-length'];
-        if (proxyRes.headers['content-range']) outHeaders['Content-Range'] = proxyRes.headers['content-range'];
-
-        res.writeHead(proxyRes.statusCode || 200, outHeaders);
-        proxyRes.pipe(res);
-      });
-
-      proxyReq.on('error', (err) => {
-        console.error('Lỗi proxy video stream:', err);
-        if (!res.headersSent) {
-          res.writeHead(502, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Lỗi tải luồng video: ' + err.message }));
-        }
-      });
-
-      req.on('close', () => {
-        proxyReq.destroy();
-      });
+      if (upstreamRes.body) {
+        const { Readable } = require('stream');
+        const readableStream = Readable.fromWeb(upstreamRes.body);
+        readableStream.pipe(res);
+        req.on('close', () => {
+          try { readableStream.destroy(); } catch (e) {}
+        });
+      } else {
+        res.end();
+      }
+      return;
 
     } catch (e) {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      return res.end(JSON.stringify({ error: 'Đường dẫn video không hợp lệ: ' + e.message }));
+      console.error('Lỗi proxy video stream:', e.message);
+      if (!res.headersSent) {
+        res.writeHead(502, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Lỗi tải luồng video: ' + e.message }));
+      }
     }
     return;
   }
