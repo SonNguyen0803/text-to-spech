@@ -179,9 +179,11 @@ document.addEventListener('DOMContentLoaded', () => {
   function populateBrowserVoices() {
     const voices = engine.getAvailableBrowserVoices();
     browserVoiceSelect.innerHTML = '';
+    const noViNotice = document.getElementById('noViVoiceNotice');
 
     if (voices.length === 0) {
-      browserVoiceSelect.innerHTML = '<option value="">(Đang tải danh sách giọng...)</option>';
+      browserVoiceSelect.innerHTML = '<option value="">(Chưa có giọng trên thiết bị - Nhấn để dùng Google TTS)</option>';
+      if (noViNotice) noViNotice.classList.remove('hidden');
       return;
     }
 
@@ -191,8 +193,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const otherVoices = [];
 
     voices.forEach(voice => {
-      const lang = voice.lang.toLowerCase();
-      if (lang.includes('vi')) {
+      const lang = (voice.lang || '').toLowerCase();
+      const name = (voice.name || '').toLowerCase();
+      if (lang.includes('vi') || name.includes('vietnam') || name.includes('tiếng việt') || name.includes('linh') || name.includes('an')) {
         vietnameseVoices.push(voice);
       } else if (lang.includes('en')) {
         englishVoices.push(voice);
@@ -224,6 +227,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (gEn) browserVoiceSelect.appendChild(gEn);
     if (gOther) browserVoiceSelect.appendChild(gOther);
 
+    // Kiểm tra xem thiết bị đã có giọng Tiếng Việt offline hay chưa
+    if (vietnameseVoices.length === 0) {
+      if (noViNotice) noViNotice.classList.remove('hidden');
+    } else {
+      if (noViNotice) noViNotice.classList.add('hidden');
+    }
+
     // Ưu tiên tự động chọn giọng tiếng Việt nếu có
     if (vietnameseVoices.length > 0) {
       browserVoiceSelect.value = vietnameseVoices[0].voiceURI;
@@ -241,6 +251,9 @@ document.addEventListener('DOMContentLoaded', () => {
       populateBrowserVoices();
     };
   }
+  engine.onVoicesChanged = () => {
+    populateBrowserVoices();
+  };
 
   browserVoiceSelect.addEventListener('change', (e) => {
     engine.settings.selectedBrowserVoiceURI = e.target.value;
@@ -824,6 +837,69 @@ document.addEventListener('DOMContentLoaded', () => {
     closeModal();
     showToast("Đã lưu thông tin cấu hình API thành công!", "success");
   });
+
+  // 13b. Xử lý Modal Hướng dẫn Giọng đọc trên Điện thoại & Nút chuyển nhanh Google TTS
+  const mobileVoiceHelpModal = document.getElementById('mobileVoiceHelpModal');
+  const openMobileVoiceHelpBtn = document.getElementById('openMobileVoiceHelpBtn');
+  const guideMobileVoiceBtn = document.getElementById('guideMobileVoiceBtn');
+  const closeMobileVoiceHelpBtn = document.getElementById('closeMobileVoiceHelpBtn');
+  const closeMobileVoiceHelpBtn2 = document.getElementById('closeMobileVoiceHelpBtn2');
+  const switchToGoogleBtn = document.getElementById('switchToGoogleBtn');
+  const modalSwitchToGoogleBtn = document.getElementById('modalSwitchToGoogleBtn');
+  const tabIosBtn = document.getElementById('tabIosBtn');
+  const tabAndroidBtn = document.getElementById('tabAndroidBtn');
+  const iosGuideContent = document.getElementById('iosGuideContent');
+  const androidGuideContent = document.getElementById('androidGuideContent');
+
+  function openMobileVoiceModal() {
+    if (!mobileVoiceHelpModal) return;
+    mobileVoiceHelpModal.classList.remove('hidden');
+    mobileVoiceHelpModal.classList.add('flex');
+  }
+
+  function closeMobileVoiceModal() {
+    if (!mobileVoiceHelpModal) return;
+    mobileVoiceHelpModal.classList.add('hidden');
+    mobileVoiceHelpModal.classList.remove('flex');
+  }
+
+  function doSwitchToGoogleTTS() {
+    sourceSelect.value = 'google';
+    sourceSelect.dispatchEvent(new Event('change'));
+    googleLangSelect.value = 'vi';
+    googleLangSelect.dispatchEvent(new Event('change'));
+    closeMobileVoiceModal();
+    showToast("Đã chuyển sang Google Translate TTS (Hỗ trợ 100% trên điện thoại)!", "success");
+  }
+
+  if (openMobileVoiceHelpBtn) openMobileVoiceHelpBtn.addEventListener('click', openMobileVoiceModal);
+  if (guideMobileVoiceBtn) guideMobileVoiceBtn.addEventListener('click', openMobileVoiceModal);
+  if (closeMobileVoiceHelpBtn) closeMobileVoiceHelpBtn.addEventListener('click', closeMobileVoiceModal);
+  if (closeMobileVoiceHelpBtn2) closeMobileVoiceHelpBtn2.addEventListener('click', closeMobileVoiceModal);
+  if (mobileVoiceHelpModal) {
+    mobileVoiceHelpModal.addEventListener('click', (e) => {
+      if (e.target === mobileVoiceHelpModal) closeMobileVoiceModal();
+    });
+  }
+
+  if (switchToGoogleBtn) switchToGoogleBtn.addEventListener('click', doSwitchToGoogleTTS);
+  if (modalSwitchToGoogleBtn) modalSwitchToGoogleBtn.addEventListener('click', doSwitchToGoogleTTS);
+
+  if (tabIosBtn && tabAndroidBtn && iosGuideContent && androidGuideContent) {
+    tabIosBtn.addEventListener('click', () => {
+      tabIosBtn.className = "flex-1 pb-2.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400 flex items-center justify-center gap-1.5 transition";
+      tabAndroidBtn.className = "flex-1 pb-2.5 text-xs font-semibold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border-b-2 border-transparent flex items-center justify-center gap-1.5 transition";
+      iosGuideContent.classList.remove('hidden');
+      androidGuideContent.classList.add('hidden');
+    });
+
+    tabAndroidBtn.addEventListener('click', () => {
+      tabAndroidBtn.className = "flex-1 pb-2.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400 flex items-center justify-center gap-1.5 transition";
+      tabIosBtn.className = "flex-1 pb-2.5 text-xs font-semibold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border-b-2 border-transparent flex items-center justify-center gap-1.5 transition";
+      androidGuideContent.classList.remove('hidden');
+      iosGuideContent.classList.add('hidden');
+    });
+  }
 
   // 14. Điều khiển Nút Chọn Tốc Độ Nhanh (Speed Presets)
   const speedPresetBtns = document.querySelectorAll('.speed-preset-btn');

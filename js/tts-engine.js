@@ -134,12 +134,52 @@ class TTSEngine {
     if (!this.speechSynthesis) return;
 
     const loadVoices = () => {
-      this.browserVoices = this.speechSynthesis.getVoices();
+      const v = this.speechSynthesis.getVoices();
+      if (v && v.length > 0) {
+        this.browserVoices = v;
+        if (typeof this.onVoicesChanged === 'function') {
+          this.onVoicesChanged(this.browserVoices);
+        }
+      }
     };
 
     loadVoices();
     if (this.speechSynthesis.onvoiceschanged !== undefined) {
-      this.speechSynthesis.onvoiceschanged = loadVoices;
+      this.speechSynthesis.onvoiceschanged = () => {
+        loadVoices();
+      };
+    }
+
+    // Polling retry: Trình duyệt di động (iOS Safari / Android Chrome) thường nạp danh sách giọng bất đồng bộ
+    let retries = 0;
+    const interval = setInterval(() => {
+      retries++;
+      loadVoices();
+      if (this.browserVoices.length > 0 || retries >= 16) {
+        clearInterval(interval);
+      }
+    }, 250);
+
+    // Kích hoạt giọng khi người dùng chạm màn hình lần đầu trên điện thoại
+    const wakeUp = () => {
+      try {
+        loadVoices();
+        // Một số phiên bản iOS Safari cần tạo SpeechSynthesisUtterance rỗng để mở AudioContext
+        if (this.speechSynthesis && this.browserVoices.length === 0) {
+          const silentUtterance = new SpeechSynthesisUtterance('');
+          silentUtterance.volume = 0;
+          this.speechSynthesis.speak(silentUtterance);
+          setTimeout(() => {
+            loadVoices();
+          }, 150);
+        }
+      } catch (e) {}
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('touchstart', wakeUp, { once: true, passive: true });
+      window.addEventListener('click', wakeUp, { once: true, passive: true });
+      window.addEventListener('pointerdown', wakeUp, { once: true, passive: true });
     }
   }
 

@@ -313,8 +313,36 @@
               class="glass-input w-full rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 cursor-pointer">
               <option value="">(Đang tải danh sách giọng nói...)</option>
             </select>
+
+            <!-- Hộp cảnh báo và trợ giúp khi điện thoại/máy chưa có giọng tiếng Việt -->
+            <div id="noViVoiceNotice" class="hidden p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300/80 dark:border-amber-800/60 text-xs text-amber-900 dark:text-amber-200 space-y-2.5 animate-in fade-in duration-200 shadow-sm">
+              <div class="flex items-start gap-2.5">
+                <div class="w-6 h-6 rounded-lg bg-amber-200 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0 mt-0.5">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                  </svg>
+                </div>
+                <div class="space-y-1">
+                  <p class="font-bold text-amber-800 dark:text-amber-300">Thiết bị chưa có giọng Tiếng Việt của trình duyệt</p>
+                  <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                    Trình duyệt điện thoại (iOS Safari, Android Chrome) mặc định không tải sẵn giọng Việt offline để tiết kiệm bộ nhớ máy.
+                  </p>
+                </div>
+              </div>
+              <div class="flex flex-wrap items-center gap-2 pt-1 border-t border-amber-200/60 dark:border-amber-900/50">
+                <button type="button" id="switchToGoogleBtn" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs shadow-sm flex items-center gap-1.5 transition">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                  <span>🚀 Dùng Google TTS (Khuyên dùng, nghe ngay)</span>
+                </button>
+                <button type="button" id="guideMobileVoiceBtn" class="px-3 py-1.5 rounded-lg bg-slate-200/80 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium text-xs transition flex items-center gap-1">
+                  <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                  <span>📖 Cách cài giọng vào điện thoại</span>
+                </button>
+              </div>
+            </div>
+
             <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
-              💡 Mẹo: Windows có sẵn giọng "Microsoft HoaiMy (vi-VN)", Android/Chrome có sẵn "Google Tiếng Việt".
+              💡 Mẹo: Windows có sẵn "Microsoft HoaiMy". Trên điện thoại, bạn có thể <button type="button" id="openMobileVoiceHelpBtn" class="text-indigo-600 dark:text-indigo-400 font-semibold hover:underline inline-flex items-center gap-0.5">cài thêm giọng Việt vào máy</button> hoặc chuyển sang <strong>Google Translate TTS</strong>.
             </p>
           </div>
 
@@ -1172,12 +1200,139 @@
     </div>
   </div>
 
-  <!-- Nạp các mã nguồn JavaScript (v2.10.0) -->
-  <script src="/js/templates.js?v=2.10.0"></script>
-  <script src="/js/visualizer.js?v=2.10.0"></script>
-  <script src="/js/video-exporter.js?v=2.10.0"></script>
-  <script src="/js/tts-engine.js?v=2.10.0"></script>
-  <script src="/js/app.js?v=2.10.0"></script>
+  <!-- MODAL HƯỚNG DẪN THÊM GIỌNG TRÌNH DUYỆT TRÊN ĐIỆN THOẠI -->
+  <div id="mobileVoiceHelpModal"
+    class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 transition-all duration-300">
+    <div
+      class="glass-card bg-white dark:bg-slate-900 w-full max-w-lg rounded-2xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+
+      <!-- Tiêu đề Modal -->
+      <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div
+            class="w-9 h-9 rounded-xl bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-slate-800 dark:text-slate-100">
+              Cách Thêm Giọng Đọc Trên Điện Thoại
+            </h3>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400">Hướng dẫn kích hoạt giọng Tiếng Việt cho iOS & Android</p>
+          </div>
+        </div>
+        <button id="closeMobileVoiceHelpBtn" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Giải pháp khuyến nghị hàng đầu -->
+      <div class="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800/60 text-xs text-emerald-900 dark:text-emerald-200 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="font-bold flex items-center gap-1 text-emerald-700 dark:text-emerald-300">
+            <span>⚡ Khuyên dùng nhanh nhất:</span>
+          </span>
+          <span class="text-[10px] bg-emerald-200 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 px-2 py-0.5 rounded-full font-semibold">1 chạm</span>
+        </div>
+        <p class="text-[12px] leading-relaxed text-slate-600 dark:text-slate-300">
+          Chuyển sang nguồn <strong>Google Translate TTS</strong>: Có sẵn giọng đọc Tiếng Việt chuẩn tự nhiên của Google, nghe và xuất video trực tiếp trên mọi điện thoại mà không cần tải thêm bất kỳ gói ngôn ngữ nào!
+        </p>
+        <button type="button" id="modalSwitchToGoogleBtn" class="w-full py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs shadow-md transition flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+          <span>Chuyển sang Google TTS ngay</span>
+        </button>
+      </div>
+
+      <!-- Tabs chọn hệ điều hành -->
+      <div class="space-y-3 pt-1">
+        <div class="flex border-b border-slate-200 dark:border-slate-800">
+          <button type="button" id="tabIosBtn" class="flex-1 pb-2.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400 flex items-center justify-center gap-1.5 transition">
+            <span>🍏 iPhone / iPad (iOS)</span>
+          </button>
+          <button type="button" id="tabAndroidBtn" class="flex-1 pb-2.5 text-xs font-semibold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border-b-2 border-transparent flex items-center justify-center gap-1.5 transition">
+            <span>🤖 Android (Samsung, Xiaomi, Oppo...)</span>
+          </button>
+        </div>
+
+        <!-- Hướng dẫn iOS -->
+        <div id="iosGuideContent" class="space-y-2.5 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+          <div class="flex items-start gap-2.5 p-2 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+            <span class="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 font-bold flex items-center justify-center shrink-0 text-[11px]">1</span>
+            <div>Mở <strong>Cài đặt (Settings)</strong> trên iPhone hoặc iPad.</div>
+          </div>
+          <div class="flex items-start gap-2.5 p-2 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+            <span class="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 font-bold flex items-center justify-center shrink-0 text-[11px]">2</span>
+            <div>Chọn mục <strong>Trợ năng (Accessibility)</strong>.</div>
+          </div>
+          <div class="flex items-start gap-2.5 p-2 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+            <span class="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 font-bold flex items-center justify-center shrink-0 text-[11px]">3</span>
+            <div>Chọn <strong>Nội dung được đọc (Spoken Content)</strong>.</div>
+          </div>
+          <div class="flex items-start gap-2.5 p-2 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+            <span class="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 font-bold flex items-center justify-center shrink-0 text-[11px]">4</span>
+            <div>Chọn <strong>Giọng nói (Voices)</strong> ➔ Tìm và chọn <strong>Tiếng Việt</strong>.</div>
+          </div>
+          <div class="flex items-start gap-2.5 p-2 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+            <span class="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 font-bold flex items-center justify-center shrink-0 text-[11px]">5</span>
+            <div>Bấm vào biểu tượng đám mây để tải giọng <strong>Linh (Linh Nâng cao)</strong> về máy.</div>
+          </div>
+          <div class="flex items-start gap-2.5 p-2 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+            <span class="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 font-bold flex items-center justify-center shrink-0 text-[11px]">6</span>
+            <div>Quay lại trình duyệt Safari và <strong>tải lại trang (F5)</strong>, giọng Linh sẽ sẵn sàng!</div>
+          </div>
+        </div>
+
+        <!-- Hướng dẫn Android -->
+        <div id="androidGuideContent" class="hidden space-y-2.5 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+          <div class="flex items-start gap-2.5 p-2 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+            <span class="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 font-bold flex items-center justify-center shrink-0 text-[11px]">1</span>
+            <div>Mở <strong>Cài đặt (Settings)</strong> trên điện thoại Android.</div>
+          </div>
+          <div class="flex items-start gap-2.5 p-2 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+            <span class="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 font-bold flex items-center justify-center shrink-0 text-[11px]">2</span>
+            <div>Tìm kiếm mục <strong>"Chuyển văn bản thành giọng nói"</strong> (hoặc <em>Text-to-speech output</em>).</div>
+          </div>
+          <div class="flex items-start gap-2.5 p-2 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+            <span class="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 font-bold flex items-center justify-center shrink-0 text-[11px]">3</span>
+            <div>Ở dòng <strong>Công cụ ưu tiên (Preferred Engine)</strong>, bấm vào biểu tượng ⚙️ (Bánh răng cài đặt).</div>
+          </div>
+          <div class="flex items-start gap-2.5 p-2 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+            <span class="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 font-bold flex items-center justify-center shrink-0 text-[11px]">4</span>
+            <div>Chọn <strong>Cài đặt dữ liệu thoại (Install voice data)</strong>.</div>
+          </div>
+          <div class="flex items-start gap-2.5 p-2 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+            <span class="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 font-bold flex items-center justify-center shrink-0 text-[11px]">5</span>
+            <div>Tìm mục <strong>Tiếng Việt</strong> và bấm nút mũi tên <strong>Tải về</strong>.</div>
+          </div>
+          <div class="flex items-start gap-2.5 p-2 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+            <span class="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 font-bold flex items-center justify-center shrink-0 text-[11px]">6</span>
+            <div>Quay lại trình duyệt Chrome và <strong>tải lại trang</strong> để danh sách giọng cập nhật!</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Nút đóng Modal -->
+      <div class="flex items-center justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+        <button id="closeMobileVoiceHelpBtn2"
+          class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+          Đã hiểu
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Nạp các mã nguồn JavaScript (v2.11.0) -->
+  <script src="/js/templates.js?v=2.11.0"></script>
+  <script src="/js/visualizer.js?v=2.11.0"></script>
+  <script src="/js/video-exporter.js?v=2.11.0"></script>
+  <script src="/js/tts-engine.js?v=2.11.0"></script>
+  <script src="/js/app.js?v=2.11.0"></script>
 </body>
 
 </html>
