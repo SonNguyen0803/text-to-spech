@@ -12,9 +12,11 @@ const url = require('url');
 
 // Khởi tạo Ytdl cho YouTube
 let YtdlClass = null;
+let YtdlClient = null;
 try {
   const distube = require('@distube/ytdl-core');
   YtdlClass = distube.Ytdl || distube;
+  YtdlClient = distube.Client || {};
 } catch (e) {
   console.warn("Chưa nạp @distube/ytdl-core:", e.message);
 }
@@ -371,6 +373,66 @@ async function resolveDouyinVideo(videoUrl) {
   throw new Error("Không thể phân tích video Douyin. Hãy kiểm tra lại link chia sẻ từ Douyin (ví dụ: https://v.douyin.com/... hoặc https://www.douyin.com/video/...)");
 }
 
+/**
+ * Bóc tách và giải mã link YouTube (youtube.com, youtu.be, shorts)
+ * Tối ưu chống chặn bot và tránh lỗi "Could not prepare player" trên Render / Cloud Server
+ */
+async function resolveYouTubeVideo(videoUrl) {
+  if (!YtdlClass) {
+    throw new Error("Mô-đun xử lý YouTube chưa sẵn sàng trên máy chủ.");
+  }
+
+  // Tuyến 1: Sử dụng Client.VisionOS (hoàn toàn không cần chạy player decipher script base.js, tránh lỗi Could not prepare player trên Render/Cloud)
+  try {
+    const clientsToTry = (YtdlClient && YtdlClient.VisionOS) ? [YtdlClient.VisionOS] : ['visionos'];
+    const yt = new YtdlClass({ clients: clientsToTry });
+    const info = await yt.getInfo(videoUrl);
+    const videoFormats = (info.formats || []).filter(f => f.hasVideo && f.url);
+    if (videoFormats.length > 0) {
+      const mp4Formats = videoFormats.filter(f => f.container === 'mp4');
+      mp4Formats.sort((a, b) => (b.height || 0) - (a.height || 0));
+      const chosen = mp4Formats.find(f => (f.height || 0) <= 1080) || videoFormats[0];
+
+      return {
+        success: true,
+        type: 'youtube',
+        title: info.videoDetails.title || 'Video YouTube',
+        duration: parseInt(info.videoDetails.lengthSeconds, 10) || 0,
+        quality: chosen.qualityLabel || '720p',
+        originalUrl: chosen.url,
+        videoUrl: `/api/proxy-video?url=${encodeURIComponent(chosen.url)}`
+      };
+    }
+  } catch (visionErr) {
+    console.warn("Giải mã YouTube qua VisionOS thất bại, thử các client phụ:", visionErr.message);
+  }
+
+  // Tuyến 2: Thử lại với client mặc định của Ytdl
+  try {
+    const ytFallback = new YtdlClass();
+    const info = await ytFallback.getInfo(videoUrl);
+    const videoFormats = (info.formats || []).filter(f => f.hasVideo && f.url);
+    if (videoFormats.length > 0) {
+      videoFormats.sort((a, b) => (b.height || 0) - (a.height || 0));
+      const chosen = videoFormats.find(f => f.container === 'mp4' && (f.height || 0) <= 1080) || videoFormats[0];
+
+      return {
+        success: true,
+        type: 'youtube',
+        title: info.videoDetails.title || 'Video YouTube',
+        duration: parseInt(info.videoDetails.lengthSeconds, 10) || 0,
+        quality: chosen.qualityLabel || '720p',
+        originalUrl: chosen.url,
+        videoUrl: `/api/proxy-video?url=${encodeURIComponent(chosen.url)}`
+      };
+    }
+  } catch (defaultErr) {
+    console.warn("Giải mã YouTube qua client mặc định thất bại:", defaultErr.message);
+  }
+
+  throw new Error("Không thể giải mã luồng video YouTube. Vui lòng kiểm tra lại đường dẫn video.");
+}
+
   // 2. ENDPOINT PHÂN TÍCH & GIẢI MÃ LINK VIDEO: /api/resolve-video (Facebook, Douyin, TikTok, YouTube, Direct MP4)
   if (parsedUrl.pathname === '/api/resolve-video') {
     let videoUrl = (parsedUrl.query.url || '').trim();
@@ -462,30 +524,9 @@ async function resolveDouyinVideo(videoUrl) {
 
       // D. Phân tích Link YouTube (youtube.com, youtu.be, shorts)
       if (lowerUrl.includes('youtube.com') || lowerUrl.includes('youtu.be')) {
-        if (!YtdlClass) {
-          throw new Error("Mô-đun xử lý YouTube chưa sẵn sàng trên máy chủ.");
-        }
-        const yt = new YtdlClass();
-        const info = await yt.getInfo(videoUrl);
-        const videoFormats = (info.formats || []).filter(f => f.hasVideo && f.url);
-        if (videoFormats.length === 0) {
-          throw new Error("Không tìm thấy luồng video khả dụng trên YouTube.");
-        }
-
-        // Ưu tiên format có video <= 1080p, ưu tiên container mp4
-        videoFormats.sort((a, b) => (b.height || 0) - (a.height || 0));
-        const chosen = videoFormats.find(f => f.container === 'mp4' && (f.height || 0) <= 1080) || videoFormats[0];
-
+        const ytData = await resolveYouTubeVideo(videoUrl);
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({
-          success: true,
-          type: 'youtube',
-          title: info.videoDetails.title || 'Video YouTube',
-          duration: parseInt(info.videoDetails.lengthSeconds, 10) || 0,
-          quality: chosen.qualityLabel,
-          originalUrl: chosen.url,
-          videoUrl: `/api/proxy-video?url=${encodeURIComponent(chosen.url)}`
-        }));
+        return res.end(JSON.stringify(ytData));
       }
 
       // E. Link Video Trực Tiếp (Direct MP4, WebM, etc.)
