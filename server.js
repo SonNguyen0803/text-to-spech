@@ -437,14 +437,16 @@ async function resolveYouTubeVideo(videoUrl) {
         // Ưu tiên chọn độ phân giải chuẩn từ 480p đến 1080p
         const chosen = mp4Formats.find(f => (f.height || 0) <= 1080 && (f.height || 0) >= 480) || mp4Formats[0] || videoFormats[0];
 
+        const ytId = (info.videoDetails && info.videoDetails.id) || (normalizedUrl.match(/[a-zA-Z0-9_-]{11}/) ? normalizedUrl.match(/[a-zA-Z0-9_-]{11}/)[0] : '');
         return {
           success: true,
           type: 'youtube',
+          videoId: ytId,
           title: (info.videoDetails && info.videoDetails.title) || 'Video YouTube',
           duration: parseInt((info.videoDetails && info.videoDetails.lengthSeconds) || 0, 10),
           quality: chosen.qualityLabel || `${chosen.height || 720}p`,
           originalUrl: chosen.url,
-          videoUrl: `/api/proxy-video?url=${encodeURIComponent(chosen.url)}`
+          videoUrl: `/api/proxy-video?yt=${encodeURIComponent(ytId)}`
         };
       }
     } catch (err) {
@@ -579,10 +581,71 @@ async function resolveYouTubeVideo(videoUrl) {
 
   // 3. ENDPOINT PROXY LUỒNG VIDEO TRÁNH CORS: /api/proxy-video
   if (parsedUrl.pathname === '/api/proxy-video') {
+    // 3A. Trường hợp video YouTube: Truyền luồng trực tiếp bằng Ytdl stream (tránh lỗi 403 Forbidden của Google Video)
+    const ytId = parsedUrl.query.yt || (parsedUrl.query.url && (parsedUrl.query.url.includes('youtube.com') || parsedUrl.query.url.includes('youtu.be')) ? parsedUrl.query.url.match(/[a-zA-Z0-9_-]{11}/)?.[0] : null);
+    if (ytId && YtdlClass) {
+      try {
+        const cookieStr = getYouTubeCookie();
+        const hasValidCookie = cookieStr && (cookieStr.includes('SAPISID') || cookieStr.includes('__Secure-3PAPISID') || cookieStr.includes('.youtube.com'));
+        const clientCandidates = [
+          (YtdlClient && YtdlClient.Tv) ? YtdlClient.Tv : 'tv',
+          (YtdlClient && YtdlClient.VisionOS) ? YtdlClient.VisionOS : 'visionos'
+        ];
+        const ytOpts = { clients: clientCandidates };
+        if (hasValidCookie) ytOpts.cookie = cookieStr;
+
+        const ytInstance = new YtdlClass(ytOpts);
+        const downloadOpts = {
+          filter: f => f.hasVideo && f.container === 'mp4'
+        };
+
+        let isRange = false;
+        if (req.headers.range) {
+          const match = req.headers.range.match(/bytes=(\d+)-(\d+)?/);
+          if (match) {
+            const start = parseInt(match[1], 10);
+            const end = match[2] ? parseInt(match[2], 10) : undefined;
+            downloadOpts.range = { start, end };
+            isRange = true;
+          }
+        }
+
+        const outHeaders = {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+          'Access-Control-Allow-Headers': 'Range, Content-Type',
+          'Content-Type': 'video/mp4',
+          'Accept-Ranges': 'bytes',
+          'Cache-Control': 'public, max-age=3600'
+        };
+
+        res.writeHead(isRange ? 206 : 200, outHeaders);
+        const stream = ytInstance.download(ytId, downloadOpts);
+        stream.pipe(res);
+
+        stream.on('error', (err) => {
+          console.warn('Lỗi truyền luồng YouTube:', err.message);
+          if (!res.headersSent) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: err.message }));
+          }
+        });
+
+        req.on('close', () => {
+          try { stream.destroy(); } catch (e) {}
+        });
+
+        return;
+      } catch (ytErr) {
+        console.error('Lỗi khởi tạo stream YouTube:', ytErr.message);
+      }
+    }
+
+    // 3B. Trường hợp video Facebook, Douyin, TikTok hoặc MP4 trực tiếp: Proxy qua HTTP/HTTPS client
     const rawTarget = parsedUrl.query.url;
     if (!rawTarget) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
-      return res.end(JSON.stringify({ error: 'Thiếu tham số url' }));
+      return res.end(JSON.stringify({ error: 'Thiếu tham số url hoặc yt' }));
     }
 
     try {
