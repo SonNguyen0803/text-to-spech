@@ -291,7 +291,7 @@
           </label>
           <select id="sourceSelect"
             class="glass-input w-full rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-indigo-500 cursor-pointer">
-            <option value="browser" selected>🌐 Giọng Trình duyệt (Web Speech API - Ngoại tuyến, 0 đỗ trễ)</option>
+            <option value="browser" selected>🌐 Giọng Trình duyệt & Piper WASM (Offline 100%, 0 độ trễ)</option>
             <option value="google">🚀 Google Translate TTS (Miễn phí công khai, tự nhiên, không cần API Key)</option>
             <option value="huggingface">🤖 Hugging Face AI Neural (Meta MMS Việt/Anh - Mô hình AI mã nguồn mở)</option>
             <option value="elevenlabs">✨ ElevenLabs Voice Studio (Cần API Key cá nhân - Siêu chân thực)</option>
@@ -300,19 +300,36 @@
 
         <!-- 2. Giọng cụ thể theo Nguồn đã chọn -->
         <div>
-          <!-- Nhóm Giọng Trình duyệt (Browser) -->
+          <!-- Nhóm Giọng Trình duyệt (Browser) & Piper WASM -->
           <div id="browserVoiceGroup" class="space-y-2">
             <div class="flex items-center justify-between">
               <label for="browserVoiceSelect"
                 class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                2. Chọn Giọng đọc cài sẵn trong hệ điều hành / trình duyệt:
+                2. Chọn Giọng đọc cài sẵn (Hệ điều hành / Piper AI WASM):
               </label>
-              <span class="text-[10px] text-indigo-500 dark:text-indigo-400">⚡ Offline 100%</span>
+              <span id="offlineBadge" class="text-[10px] text-indigo-500 dark:text-indigo-400 font-medium">⚡ Offline 100%</span>
             </div>
             <select id="browserVoiceSelect"
               class="glass-input w-full rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 cursor-pointer">
               <option value="">(Đang tải danh sách giọng nói...)</option>
             </select>
+
+            <!-- Thanh tiến trình tải mô hình Piper AI WASM lần đầu -->
+            <div id="piperProgressContainer" class="hidden space-y-1.5 p-3 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/50 text-xs animate-in fade-in duration-200">
+              <div class="flex items-center justify-between text-[11px] font-medium text-indigo-700 dark:text-indigo-300">
+                <span class="flex items-center gap-1.5">
+                  <svg class="w-3.5 h-3.5 animate-spin text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                  <span id="piperProgressLabel">Đang tải mô hình Piper AI vào trình duyệt...</span>
+                </span>
+                <span id="piperProgressPercent" class="font-mono font-bold">0%</span>
+              </div>
+              <div class="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                <div id="piperProgressBar" class="bg-indigo-600 h-full rounded-full transition-all duration-200" style="width: 0%"></div>
+              </div>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
+                💡 Mô hình AI Piper chỉ cần tải 1 lần và lưu trực tiếp vào bộ nhớ máy (OPFS). Lần sau sẽ phát tức thì 100% ngoại tuyến không tốn dữ liệu mạng!
+              </p>
+            </div>
 
             <!-- Hộp cảnh báo và trợ giúp khi điện thoại/máy chưa có giọng tiếng Việt -->
             <div id="noViVoiceNotice" class="hidden p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300/80 dark:border-amber-800/60 text-xs text-amber-900 dark:text-amber-200 space-y-2.5 animate-in fade-in duration-200 shadow-sm">
@@ -1327,12 +1344,24 @@
     </div>
   </div>
 
-  <!-- Nạp các mã nguồn JavaScript (v2.11.0) -->
-  <script src="/js/templates.js?v=2.11.0"></script>
-  <script src="/js/visualizer.js?v=2.11.0"></script>
-  <script src="/js/video-exporter.js?v=2.11.0"></script>
-  <script src="/js/tts-engine.js?v=2.11.0"></script>
-  <script src="/js/app.js?v=2.11.0"></script>
+  <!-- Nạp thư viện Piper TTS WebAssembly (@mintplex-labs/piper-tts-web) chạy Offline 100% -->
+  <script type="module">
+    try {
+      import * as piper from 'https://cdn.jsdelivr.net/npm/@mintplex-labs/piper-tts-web@1.0.5/+esm';
+      window.piperTts = piper;
+      window.dispatchEvent(new CustomEvent('piper-tts-ready', { detail: piper }));
+      console.log('✅ Piper TTS WebAssembly Module đã nạp thành công!');
+    } catch (e) {
+      console.warn('Không thể nạp Piper TTS module từ CDN:', e);
+    }
+  </script>
+
+  <!-- Nạp các mã nguồn JavaScript (v2.12.0) -->
+  <script src="/js/templates.js?v=2.12.0"></script>
+  <script src="/js/visualizer.js?v=2.12.0"></script>
+  <script src="/js/video-exporter.js?v=2.12.0"></script>
+  <script src="/js/tts-engine.js?v=2.12.0"></script>
+  <script src="/js/app.js?v=2.12.0"></script>
 </body>
 
 </html>

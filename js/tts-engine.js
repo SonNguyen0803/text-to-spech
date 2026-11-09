@@ -22,11 +22,28 @@ function getApiBaseUrl() {
   return '';
 }
 
+// Danh sách các mô hình giọng đọc AI Piper TTS WebAssembly (chạy offline trên máy khách)
+const PIPER_VOICES = [
+  { id: 'vi_VN-vais1000-medium', name: '🇻🇳 Tiếng Việt - Vais1000 (AI Neural)', lang: 'vi-VN', size: '~60MB' },
+  { id: 'vi_VN-25hours_single-low', name: '🇻🇳 Tiếng Việt - 25Hours (AI Nhanh)', lang: 'vi-VN', size: '~60MB' },
+  { id: 'vi_VN-vivos-x_low', name: '🇻🇳 Tiếng Việt - Vivos (AI Nhẹ 27MB)', lang: 'vi-VN', size: '~27MB' },
+  { id: 'en_US-lessac-medium', name: '🇺🇸 English (US) - Lessac (AI Nữ)', lang: 'en-US', size: '~60MB' },
+  { id: 'en_US-libritts-high', name: '🇺🇸 English (US) - LibriTTS (AI Cao cấp)', lang: 'en-US', size: '~60MB' },
+  { id: 'en_US-ryan-medium', name: '🇺🇸 English (US) - Ryan (AI Nam)', lang: 'en-US', size: '~60MB' },
+  { id: 'en_GB-cori-high', name: '🇬🇧 English (UK) - Cori (AI Anh)', lang: 'en-GB', size: '~60MB' },
+  { id: 'fr_FR-siwis-medium', name: '🇫🇷 Français - Siwis (AI Pháp)', lang: 'fr-FR', size: '~60MB' },
+  { id: 'de_DE-thorsten-medium', name: '🇩🇪 Deutsch - Thorsten (AI Đức)', lang: 'de-DE', size: '~60MB' },
+  { id: 'es_ES-sharvard-medium', name: '🇪🇸 Español - Sharvard (AI Tây Ban Nha)', lang: 'es-ES', size: '~60MB' },
+  { id: 'zh_CN-huayan-medium', name: '🇨🇳 Trung Quốc - Huayan (AI Tiếng Trung)', lang: 'zh-CN', size: '~60MB' }
+];
+
 class TTSEngine {
   constructor() {
-    this.currentSource = 'browser'; // 'browser' | 'google' | 'huggingface' | 'elevenlabs'
+    this.currentSource = 'browser'; // 'browser' | 'google' | 'huggingface' | 'elevenlabs' | 'piper'
     this.speechSynthesis = window.speechSynthesis || null;
     this.browserVoices = [];
+    this.piperVoices = PIPER_VOICES;
+    this.piper = null;
     this.currentUtterance = null;
     this.audioElement = new Audio();
     this.currentAudioUrl = null;
@@ -35,6 +52,9 @@ class TTSEngine {
 
     // Trạng thái phát
     this.state = 'idle'; // 'idle' | 'playing' | 'paused' | 'loading'
+
+    // Callback tiến độ tải Piper WASM model
+    this.onPiperProgress = null;
 
     // Danh sách các đoạn âm thanh khi phát đa phần (chunking)
     this.audioPlaylist = [];
@@ -220,6 +240,119 @@ class TTSEngine {
   }
 
   /**
+   * Kiểm tra xem một voiceURI có phải là giọng Piper AI WebAssembly không
+   */
+  isPiperVoice(voiceURI) {
+    if (!voiceURI) return false;
+    return voiceURI.startsWith('piper:') || this.piperVoices.some(p => p.id === voiceURI);
+  }
+
+  /**
+   * Lấy voiceId chuẩn cho Piper (loại bỏ tiền tố piper:)
+   */
+  getCleanPiperVoiceId(voiceURI) {
+    if (!voiceURI) return 'vi_VN-vais1000-medium';
+    return voiceURI.replace(/^piper:/, '');
+  }
+
+  /**
+   * Khởi tạo hoặc lấy module Piper TTS WebAssembly (@mintplex-labs/piper-tts-web)
+   */
+  async getPiper() {
+    if (this.piper) return this.piper;
+    if (typeof window !== 'undefined' && window.piperTts) {
+      this.piper = window.piperTts;
+      return this.piper;
+    }
+
+    try {
+      this.piper = await import('https://cdn.jsdelivr.net/npm/@mintplex-labs/piper-tts-web@1.0.5/+esm');
+      if (typeof window !== 'undefined') window.piperTts = this.piper;
+      return this.piper;
+    } catch (err) {
+      console.warn("Lỗi nạp module Piper TTS:", err);
+      throw new Error("Không thể nạp thư viện Piper TTS WebAssembly. Hãy kiểm tra kết nối mạng lần đầu.");
+    }
+  }
+
+  /**
+   * Kiểm tra danh sách các giọng Piper đã được lưu trong bộ nhớ máy (OPFS)
+   */
+  async getStoredPiperVoices() {
+    try {
+      const piper = await this.getPiper();
+      if (piper && typeof piper.stored === 'function') {
+        return await piper.stored();
+      }
+    } catch (e) {
+      console.warn("Không thể kiểm tra giọng Piper đã lưu:", e);
+    }
+    return [];
+  }
+
+  /**
+   * NGUỒN PIPER: Piper TTS WebAssembly (Chạy Offline 100% trong trình duyệt qua ONNX Runtime Web)
+   */
+  async speakPiper(text) {
+    this.setState('loading');
+    const cleanText = text.trim();
+    if (!cleanText) {
+      this.setState('idle');
+      throw new Error("Vui lòng nhập văn bản cần đọc!");
+    }
+
+    try {
+      const piper = await this.getPiper();
+      const voiceId = this.getCleanPiperVoiceId(this.settings.selectedBrowserVoiceURI || 'vi_VN-vais1000-medium');
+
+      if (this.onPiperProgress) {
+        this.onPiperProgress({ status: 'starting', percent: 0, voiceId });
+      }
+
+      // predict tự động tải và cache vào OPFS nếu chưa có trong máy
+      const wavBlob = await piper.predict(
+        { text: cleanText, voiceId: voiceId },
+        (progress) => {
+          if (progress && progress.total) {
+            const percent = Math.min(100, Math.round((progress.loaded / progress.total) * 100));
+            if (this.onPiperProgress) {
+              this.onPiperProgress({ status: 'downloading', percent, loaded: progress.loaded, total: progress.total, voiceId });
+            }
+          }
+        }
+      );
+
+      if (this.onPiperProgress) {
+        this.onPiperProgress({ status: 'ready', percent: 100, voiceId });
+      }
+
+      this.currentAudioBlob = wavBlob;
+      this.currentAudioUrl = URL.createObjectURL(wavBlob);
+      this.currentAudioType = 'wav';
+      this.lastRenderedText = cleanText;
+
+      this.audioElement.src = this.currentAudioUrl;
+      this.audioElement.playbackRate = this.settings.rate || 1.0;
+      this.audioElement.volume = this.settings.volume !== undefined ? this.settings.volume : 1.0;
+
+      await this.audioElement.play();
+      this.setState('playing');
+
+      if (this.onAudioReady) {
+        this.onAudioReady({ url: this.currentAudioUrl, blob: this.currentAudioBlob, type: 'wav' });
+      }
+      return wavBlob;
+    } catch (err) {
+      console.error("Lỗi Piper TTS:", err);
+      this.setState('idle');
+      if (this.onPiperProgress) {
+        this.onPiperProgress({ status: 'error', error: err.message });
+      }
+      throw new Error(`Lỗi Piper AI WebAssembly: ${err.message || 'Không thể tổng hợp giọng đọc'}`);
+    }
+  }
+
+  /**
    * Lấy danh sách giọng đọc của trình duyệt, nhóm theo ngôn ngữ
    */
   getAvailableBrowserVoices() {
@@ -242,7 +375,9 @@ class TTSEngine {
     // Dừng tác vụ đang phát trước đó
     this.stop();
 
-    if (this.currentSource === 'browser') {
+    if (this.currentSource === 'piper' || (this.currentSource === 'browser' && this.isPiperVoice(this.settings.selectedBrowserVoiceURI))) {
+      return this.speakPiper(cleanText);
+    } else if (this.currentSource === 'browser') {
       return this.speakBrowser(cleanText);
     } else if (this.currentSource === 'google') {
       return this.speakGoogle(cleanText);
@@ -558,7 +693,7 @@ class TTSEngine {
    * Tạm dừng
    */
   pause() {
-    if (this.currentSource === 'browser') {
+    if (this.currentSource === 'browser' && !this.isPiperVoice(this.settings.selectedBrowserVoiceURI)) {
       if (this.speechSynthesis && this.speechSynthesis.speaking) {
         this.speechSynthesis.pause();
         this.setState('paused');
@@ -575,7 +710,7 @@ class TTSEngine {
    * Tiếp tục phát
    */
   resume() {
-    if (this.currentSource === 'browser') {
+    if (this.currentSource === 'browser' && !this.isPiperVoice(this.settings.selectedBrowserVoiceURI)) {
       if (this.speechSynthesis && this.speechSynthesis.paused) {
         this.speechSynthesis.resume();
         this.setState('playing');
