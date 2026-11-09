@@ -417,7 +417,8 @@ async function resolveYouTubeViaInvidious(videoId) {
 
   for (const uri of instances) {
     try {
-      const res = await fetch(`${uri}/api/v1/videos/${videoId}`, {
+      // Yêu cầu Invidious proxy trực tiếp luồng qua tham số ?local=true để tránh ràng buộc IP của Google Video
+      const res = await fetch(`${uri}/api/v1/videos/${videoId}?local=true`, {
         headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
         signal: AbortSignal.timeout(6000)
       });
@@ -436,6 +437,11 @@ async function resolveYouTubeViaInvidious(videoId) {
         return res <= 1080 && res >= 480;
       }) || avcFormats[0] || allFormats[0];
 
+      let streamUrl = chosen.url;
+      if (streamUrl.startsWith('/')) {
+        streamUrl = uri.replace(/\/+$/, '') + streamUrl;
+      }
+
       return {
         success: true,
         type: 'youtube',
@@ -443,8 +449,8 @@ async function resolveYouTubeViaInvidious(videoId) {
         title: data.title || 'Video YouTube',
         duration: parseInt(data.lengthSeconds, 10) || 0,
         quality: chosen.qualityLabel || chosen.resolution || '720p',
-        originalUrl: chosen.url,
-        videoUrl: `/api/proxy-video?url=${encodeURIComponent(chosen.url)}`
+        originalUrl: streamUrl,
+        videoUrl: `/api/proxy-video?url=${encodeURIComponent(streamUrl)}`
       };
     } catch (err) {
       console.warn(`Thử bóc tách qua Invidious relay [${uri}] thất bại:`, err.message);
