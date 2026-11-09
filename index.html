@@ -307,7 +307,13 @@
                 class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 2. Chọn Giọng đọc cài sẵn (Hệ điều hành / Piper AI WASM):
               </label>
-              <span id="offlineBadge" class="text-[10px] text-indigo-500 dark:text-indigo-400 font-medium">⚡ Offline 100%</span>
+              <div class="flex items-center gap-2">
+                <button type="button" id="clearPiperCacheBtn" title="Xóa bộ nhớ đệm nếu mô hình giọng AI bị lỗi tải hoặc file dở dang"
+                  class="text-[10px] text-slate-400 hover:text-rose-500 underline transition">
+                  🔄 Xóa cache AI
+                </button>
+                <span id="offlineBadge" class="text-[10px] text-indigo-500 dark:text-indigo-400 font-medium">⚡ Offline 100%</span>
+              </div>
             </div>
 
             <!-- Ô tìm kiếm giọng đọc theo thời gian thực -->
@@ -1381,12 +1387,12 @@
     }
   </script>
 
-  <!-- Nạp các mã nguồn JavaScript (v2.13.0) -->
-  <script src="/js/templates.js?v=2.13.0"></script>
-  <script src="/js/visualizer.js?v=2.13.0"></script>
-  <script src="/js/video-exporter.js?v=2.13.0"></script>
-  <script src="/js/tts-engine.js?v=2.13.0"></script>
-  <script src="/js/app.js?v=2.13.0"></script>
+  <!-- Nạp các mã nguồn JavaScript (v2.14.0) -->
+  <script src="/js/templates.js?v=2.14.0"></script>
+  <script src="/js/visualizer.js?v=2.14.0"></script>
+  <script src="/js/video-exporter.js?v=2.14.0"></script>
+  <script src="/js/tts-engine.js?v=2.14.0"></script>
+  <script src="/js/app.js?v=2.14.0"></script>
 </body>
 
 </html>

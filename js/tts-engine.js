@@ -291,9 +291,85 @@ class TTSEngine {
   }
 
   /**
+   * Kiểm tra và dọn dẹp file mô hình trong bộ nhớ máy (OPFS) nếu bị lỗi hoặc tải chưa hoàn chỉnh (< 1MB)
+   */
+  async validateAndCleanPiperModel(voiceId) {
+    if (typeof navigator === 'undefined' || !navigator.storage || !navigator.storage.getDirectory) return;
+    try {
+      const root = await navigator.storage.getDirectory();
+      const piperDir = await root.getDirectoryHandle('piper', { create: false }).catch(() => null);
+      if (!piperDir) return;
+
+      const fileName = `${voiceId}.onnx`;
+      const fileHandle = await piperDir.getFileHandle(fileName, { create: false }).catch(() => null);
+      if (fileHandle) {
+        const file = await fileHandle.getFile();
+        // Một mô hình ONNX Piper thực sự luôn từ 15MB đến 65MB.
+        // Nếu kích thước < 1MB, chắc chắn là file tải lỗi dở dang hoặc trang báo lỗi HTML (gây lỗi "No graph was found in the protobuf")
+        if (file.size < 1000000) {
+          console.warn(`[Piper TTS] Phát hiện file cache ${fileName} bị hỏng (${file.size} bytes). Đang xóa để tự động tải lại...`);
+          await piperDir.removeEntry(fileName).catch(() => {});
+          await piperDir.removeEntry(`${fileName}.json`).catch(() => {});
+        }
+      }
+    } catch (e) {
+      console.warn("[Piper TTS] Lỗi khi kiểm tra tính toàn vẹn của cache:", e);
+    }
+  }
+
+  /**
+   * Xóa hẳn mô hình Piper bị hỏng khỏi bộ nhớ máy (OPFS)
+   */
+  async cleanCorruptedPiperModel(voiceId) {
+    try {
+      if (typeof navigator !== 'undefined' && navigator.storage && navigator.storage.getDirectory) {
+        const root = await navigator.storage.getDirectory();
+        const piperDir = await root.getDirectoryHandle('piper', { create: false }).catch(() => null);
+        if (piperDir) {
+          const fileName = `${voiceId}.onnx`;
+          await piperDir.removeEntry(fileName).catch(() => {});
+          await piperDir.removeEntry(`${fileName}.json`).catch(() => {});
+        }
+      }
+      const piper = await this.getPiper().catch(() => null);
+      if (piper && typeof piper.remove === 'function') {
+        await piper.remove(voiceId).catch(() => {});
+      }
+      if (piper && piper.TtsSession) {
+        piper.TtsSession._instance = null;
+      }
+    } catch (e) {
+      console.warn("[Piper TTS] Lỗi khi xóa file cache:", e);
+    }
+  }
+
+  /**
+   * Xóa toàn bộ bộ nhớ đệm (cache) Piper TTS trong OPFS
+   */
+  async clearAllPiperCache() {
+    try {
+      const piper = await this.getPiper().catch(() => null);
+      if (piper && typeof piper.flush === 'function') {
+        await piper.flush().catch(() => {});
+      }
+      if (typeof navigator !== 'undefined' && navigator.storage && navigator.storage.getDirectory) {
+        const root = await navigator.storage.getDirectory();
+        await root.removeEntry('piper', { recursive: true }).catch(() => {});
+      }
+      if (piper && piper.TtsSession) {
+        piper.TtsSession._instance = null;
+      }
+      return true;
+    } catch (e) {
+      console.warn("[Piper TTS] Lỗi khi dọn dẹp toàn bộ cache:", e);
+      return false;
+    }
+  }
+
+  /**
    * NGUỒN PIPER: Piper TTS WebAssembly (Chạy Offline 100% trong trình duyệt qua ONNX Runtime Web)
    */
-  async speakPiper(text) {
+  async speakPiper(text, retryCount = 0) {
     this.setState('loading');
     const cleanText = text.trim();
     if (!cleanText) {
@@ -301,9 +377,13 @@ class TTSEngine {
       throw new Error("Vui lòng nhập văn bản cần đọc!");
     }
 
+    const voiceId = this.getCleanPiperVoiceId(this.settings.selectedBrowserVoiceURI || 'vi_VN-vais1000-medium');
+
+    // Tự động kiểm tra và dọn dẹp file cache nếu bị hỏng
+    await this.validateAndCleanPiperModel(voiceId);
+
     try {
       const piper = await this.getPiper();
-      const voiceId = this.getCleanPiperVoiceId(this.settings.selectedBrowserVoiceURI || 'vi_VN-vais1000-medium');
 
       if (this.onPiperProgress) {
         this.onPiperProgress({ status: 'starting', percent: 0, voiceId });
@@ -371,6 +451,15 @@ class TTSEngine {
       return wavBlob;
     } catch (err) {
       console.error("Lỗi Piper TTS:", err);
+
+      // Nếu phát hiện lỗi Protobuf (do file cache trước đó bị tải dở hoặc lưu nhầm HTML error)
+      const isProtobufError = err.message && (err.message.includes('protobuf') || err.message.includes('No graph was found'));
+      if (isProtobufError && retryCount === 0) {
+        console.warn(`[Piper TTS] Phát hiện file model ${voiceId} bị lỗi protobuf. Đang tự động dọn cache và tải lại lần 2...`);
+        await this.cleanCorruptedPiperModel(voiceId);
+        return this.speakPiper(text, 1);
+      }
+
       this.setState('idle');
       if (this.onPiperProgress) {
         this.onPiperProgress({ status: 'error', error: err.message });

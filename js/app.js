@@ -36,6 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const voiceSearchStats = document.getElementById('voiceSearchStats');
   const voiceSearchResultCount = document.getElementById('voiceSearchResultCount');
   const resetVoiceFilterBtn = document.getElementById('resetVoiceFilterBtn');
+  const clearPiperCacheBtn = document.getElementById('clearPiperCacheBtn');
   const googleVoiceGroup = document.getElementById('googleVoiceGroup');
   const googleLangSelect = document.getElementById('googleLangSelect');
   const hfVoiceGroup = document.getElementById('hfVoiceGroup');
@@ -378,6 +379,20 @@ document.addEventListener('DOMContentLoaded', () => {
       if (voiceSearchInput) {
         voiceSearchInput.value = '';
         renderFilteredVoiceList('');
+      }
+    });
+  }
+
+  // Nút xóa sạch toàn bộ cache mô hình Piper AI trong máy
+  if (clearPiperCacheBtn) {
+    clearPiperCacheBtn.addEventListener('click', async () => {
+      showToast("Đang xóa bộ nhớ đệm giọng AI trong trình duyệt...", "info", 1800);
+      const success = await engine.clearAllPiperCache();
+      if (success) {
+        await populateBrowserVoices();
+        showToast("Đã dọn dẹp sạch cache giọng AI! Bạn có thể chọn và tải lại mô hình mới chuẩn.", "success");
+      } else {
+        showToast("Không thể xóa bộ nhớ đệm.", "error");
       }
     });
   }
